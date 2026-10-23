@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jueansuy 的个人小站：记录学习，做一点有用的东西。SHA-256、Base64 与 URL 编解码均在浏览器本地完成。">
+  <meta name="theme-color" content="#101615">
+  <title>Jueansuy · 保持好奇，继续动手</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#tools">跳到工具箱</a>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="#home" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <nav aria-label="主导航"><a href="#tools">工具箱</a><a href="#notes">实验笔记</a><a href="#about">关于</a></nav>
+      <a class="header-link" href="#tools">动手试一下 <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main id="home">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="status-dot"></span> STILL LEARNING. ALWAYS CURIOUS.</div>
+          <h1 id="hero-title">保持好奇，<br>把想法<span class="mint">做出来。</span></h1>
+          <p class="hero-description">我是 Jueansuy，一名网络空间安全专业的学生。<br class="desktop-break">这里记录在学的东西，也放一些自己想用的小工具。</p>
+          <a class="button button-primary hero-button" href="#tools">从一个小实验开始 <span aria-hidden="true">↘</span></a>
+          <div class="hero-footnote"><span class="little-line"></span> 不急着成为专家，先让一个小东西跑起来。</div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-corner art-corner-top">FIELD NOTES / 001</div>
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <span class="orbit-dot"></span>
+          <div class="art-letter">j<span>.</span></div>
+          <div class="art-sticker">learn<br><em>by doing.</em><span>从好奇，到动手。</span></div>
+          <div class="art-corner art-corner-bottom">SMALL STEPS, REAL THINGS. <span>↗</span></div>
+        </div>
+      </section>
+
+      <section id="tools" class="tools-section" aria-labelledby="tools-title">
+        <div class="section-heading"><div><span class="section-index">01 / TOOLBOX</span><h2 id="tools-title">随手用的小工具<span class="mint">.</span></h2></div><p><span class="status-dot"></span> 文本在本页处理，不上传输入内容</p></div>
+        <div class="workbench">
+          <div class="workbench-top">
+            <div class="tool-tabs" role="tablist" aria-label="选择文本工具">
+              <button type="button" class="tool-tab active" id="tab-sha256" role="tab" aria-selected="true" aria-controls="tool-panel" data-tool="sha256"><span aria-hidden="true">#</span> SHA-256</button>
+              <button type="button" class="tool-tab" id="tab-base64" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="base64"><span aria-hidden="true">{ }</span> Base64</button>
+              <button type="button" class="tool-tab" id="tab-url" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="url"><span aria-hidden="true">↗</span> URL 编解码</button>
+            </div>
+            <span class="local-badge"><span aria-hidden="true">◈</span> BROWSER ONLY</span>
+          </div>
+          <div id="tool-panel" role="tabpanel" aria-labelledby="tab-sha256">
+            <div class="tool-description-row"><p id="tool-hint">给一段文本生成 SHA-256 摘要，用来比较内容是否相同。它不是加密，也不能解密回原文。</p><div class="mode-controls" id="mode-controls" hidden aria-label="编码或解码"><button type="button" data-mode="encode" aria-pressed="true">编码</button><button type="button" data-mode="decode" aria-pressed="false">解码</button></div></div>
+            <div class="editors">
+              <div class="editor input-editor">
+                <div class="editor-heading"><label for="tool-input">输入 <span>INPUT</span></label><div class="editor-actions"><button type="button" id="load-example">试个例子</button><button type="button" id="clear-input">清空</button></div></div>
+                <textarea id="tool-input" maxlength="100000" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="tool-hint tool-input-count" placeholder="在这里输入或粘贴文本…">你好，世界！</textarea>
+                <div class="editor-meta"><span id="tool-input-count">0 字符 · 0 字节</span><span>UTF-8</span></div>
+              </div>
+              <div class="editor output-editor">
+                <div class="editor-heading"><label for="tool-output">结果 <span>OUTPUT</span></label><button class="copy-button" type="button" id="copy-output" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="9" height="10" rx="1.5"/><path d="M12 7V3H3v10h4"/></svg>复制结果</button></div>
+                <textarea id="tool-output" readonly spellcheck="false" aria-describedby="tool-status tool-output-count" placeholder="计算结果会出现在这里"></textarea>
+                <div class="editor-meta"><span id="tool-output-count">等待运行</span><span id="output-format">64 位十六进制</span></div>
+              </div>
+            </div>
+            <div class="workbench-footer"><div class="run-actions"><button type="button" class="button button-primary" id="run-tool">计算 SHA-256 <span aria-hidden="true">→</span></button><button type="button" class="swap-button" id="swap-text" hidden>结果用作输入 <span aria-hidden="true">⇄</span></button></div><p id="tool-status" role="status" aria-live="polite" aria-atomic="true">准备就绪</p></div>
+          </div>
+        </div>
+        <div class="toolbox-caption"><span>⌘ / Ctrl + Enter 快速运行</span><span>无需账号 · 不保存文本 · 无第三方脚本</span></div>
+        <noscript><p class="noscript-note">这些工具需要 JavaScript。启用后，文本仍只在本页处理。</p></noscript>
+      </section>
+
+      <section id="notes" class="notes-section" aria-labelledby="notes-title">
+        <div class="section-heading"><div><span class="section-index">02 / FIELD NOTES</span><h2 id="notes-title">把一个概念弄明白<span class="mint">.</span></h2></div><p>边用，边理解。</p></div>
+        <div class="note-list">
+          <details class="note"><summary><span class="note-number">01</span><div><span class="note-category">HASH / 内容指纹</span><h3>SHA-256 为什么没有“解密”按钮？</h3><p>摘要、加密、密码存储，先分清这三件事。</p></div><span class="note-open" aria-hidden="true">+</span></summary><div class="note-body"><p>SHA-256 会把输入转换为固定长度的摘要。改动一个字符，通常就会得到完全不同的结果。你可以在上面的工具里，把“你好”改成“你好！”，观察变化。</p><p>哈希没有对应的解密操作。不过，对容易猜到的输入，别人仍可逐个尝试并比较摘要。因此，直接用一次 SHA-256 保存密码并不合适；密码存储需要专门的方案。</p><button type="button" class="text-link note-example" data-example-tool="sha256">去做这个实验 <span aria-hidden="true">↗</span></button></div></details>
+          <details class="note"><summary><span class="note-number">02</span><div><span class="note-category">ENCODING / 字节与文本</span><h3>Base64 看不懂，就代表安全吗？</h3><p>把中文和 emoji 编码，再亲手还原回来。</p></div><span class="note-open" aria-hidden="true">+</span></summary><div class="note-body"><p>Base64 是把字节表示成一组可打印字符的编码方式。它不需要密钥，知道编码规则就能解码，所以不能拿来保护秘密。</p><p>本页先把文本转为 UTF-8 字节，再做标准 Base64 编码。解码时也会检查结果是不是有效的 UTF-8 文本；图片或任意二进制数据的 Base64 不一定适合这个文本工具。</p><button type="button" class="text-link note-example" data-example-tool="base64">试试中文与 emoji <span aria-hidden="true">↗</span></button></div></details>
+          <details class="note"><summary><span class="note-number">03</span><div><span class="note-category">WEB / 一个小细节</span><h3>URL 里的 % 和 + 是怎么回事？</h3><p>路径、参数值和表单编码，规则有时不一样。</p></div><span class="note-open" aria-hidden="true">+</span></summary><div class="note-body"><p>当你把一段文本放进 URL 的参数值时，空格、中文和一些符号需要编码。例如，空格可以变成 <code>%20</code>，加号可以变成 <code>%2B</code>。</p><p>本页使用 <code>encodeURIComponent</code> 与 <code>decodeURIComponent</code>，适合单独的参数值。它不会把解码输入中的 <code>+</code> 自动当成空格，也不会代你解析整条 URL。</p><button type="button" class="text-link note-example" data-example-tool="url">比较一下编码结果 <span aria-hidden="true">↗</span></button></div></details>
+        </div>
+      </section>
+
+      <section id="about" class="about-section" aria-labelledby="about-title"><div class="about-mark" aria-hidden="true">↗</div><div><span class="section-index">03 / ABOUT THIS CORNER</span><h2 id="about-title">一个慢慢长大的小站。</h2><p>不把“会了多少”当作开始的门槛。先做一点，记下一点，再把不明白的地方弄清楚。</p></div><div class="about-tag">LEARN<br>BUILD<br><span>REPEAT.</span></div></section>
+    </main>
+    <footer class="site-footer"><span><span class="status-dot"></span> JUEANSUY / 保持好奇，继续动手。</span><a href="#home">回到顶部 <span aria-hidden="true">↑</span></a></footer>
+  </div>
+</body>
+</html>
