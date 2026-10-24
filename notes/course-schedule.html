@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 207 课程表：有向图拓扑排序与 Kahn 算法，为什么入度为 0 代表前置满足，如何顺带检测死锁环。附步进演示与 C 实现节选。">
+  <meta name="theme-color" content="#101615">
+  <title>课程表：为什么入度为 0 才是 BFS 拓扑排序的钥匙 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <script type="module" src="../course-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 004</div>
+        <h1>课程表：<br>为什么入度为 0 才是 <span class="mint">BFS 拓扑排序的钥匙</span></h1>
+        <p class="article-deck">这是一道 CSP 备考中的经典有向图与拓扑排序练习。课程之间有先后先修要求，形成一张有向图。复盘这道题时，关键是用 Kahn 算法，将“可以开学的课程”与“入度为 0”画上等号，在队列推进中自然发现死锁环。</p>
+        <div class="article-meta"><span>C 语言</span><span>拓扑排序 / BFS</span><span>LeetCode 207 · 中等</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="课程表与拓扑排序刷题复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM</span>
+            <h2 id="problem-title">把先修关系，看成有向图。</h2>
+            <p>总共有 <code>numCourses</code> 门课程，编号从 <code>0</code> 到 <code>numCourses - 1</code>。数对 <code>[a, b]</code> 表示想学课程 <code>a</code> 必须先修完课程 <code>b</code>。题目问是否可能修完所有课程。</p>
+            <p>如果课程之间存在互相依赖（如 <code>0</code> 依赖 <code>1</code>，<code>1</code> 依赖 <code>0</code>），或者多门课串成一条闭环，就会出现“谁也无法先学”的死锁。这就是典型的<strong>有向图环检测</strong>。通过拓扑排序，如果能排出一个合法的先后学习线性序列，说明图是无环的（DAG）；如果排不完，说明存在环依赖。</p>
+          </section>
+
+          <section id="course-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">分批消解入度，解锁新课程。</h2>
+            <p>选择情形并点击“下一步”，观察各节点入度如何随着前置课程的修完逐步扣减，以及入度降为 0 后如何入队推进。</p>
+            <div class="course-demo-panel">
+              <div class="course-demo-heading">
+                <span>有向图拓扑排序 · BFS 步进</span>
+                <span>Kahn 算法</span>
+              </div>
+              <div class="course-stage">
+                <div class="course-visuals">
+                  <div class="course-row">
+                    <span class="course-row-label">课程节点状态（入度为 0 代表前置要求全部满足）</span>
+                    <div id="course-nodes" class="course-grid" role="group" aria-label="课程节点"></div>
+                  </div>
+                  <div class="course-row">
+                    <span class="course-row-label">依赖关系（b → a 表示学完 b 才能学 a）</span>
+                    <div id="course-edges" class="course-edges" role="group" aria-label="依赖边"></div>
+                  </div>
+                  <ul class="course-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-current"></span> 正在修读</li>
+                    <li><span class="legend-swatch swatch-queue"></span> 入度为 0 在等待</li>
+                    <li><span class="legend-swatch swatch-learned"></span> 已修完</li>
+                  </ul>
+                </div>
+                <div class="course-readout">
+                  <div class="course-metrics">
+                    <div><span>当前队列</span><p><strong id="course-queue">[]</strong></p></div>
+                    <div><span>已修完课程</span><p><strong id="course-learned">0 / 0</strong></p></div>
+                    <div><span>步数</span><p><strong id="course-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="course-status" role="status" aria-live="polite" aria-atomic="true">初始状态：准备将初始入度为 0 的课程加入队列。</p>
+                  <p class="course-reading-hint">每修完一门课，它指向的后续课程入度减 1。只有入度归零，课程才能解锁。</p>
+                </div>
+              </div>
+              <div id="course-controls" class="course-controls" hidden>
+                <div class="course-scenario-field">
+                  <label for="course-scenario">选择情形</label>
+                  <select id="course-scenario">
+                    <option value="diamond">经典钻石依赖 [0→1, 0→2, 1→3, 2→3] · 可完成</option>
+                    <option value="cycle">三节点闭环死锁 [0→1, 1→2, 2→0] · 无法完成</option>
+                    <option value="partial_cycle">局部环死锁 [0→3, 1→2, 2→1] · 仅完成部分</option>
+                    <option value="linear">单线串联 [0→1→2] · 可完成</option>
+                    <option value="independent">互无依赖 · 全部可完成</option>
+                  </select>
+                </div>
+                <div class="course-step-buttons">
+                  <button id="course-prev" type="button">← 上一步</button>
+                  <button id="course-next" type="button">下一步 →</button>
+                  <button id="course-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="course-noscript">步进演示需要 JavaScript。上面保留的是算法步骤；继续阅读可以看到完整拓扑排序逻辑与实现细节。</p></noscript>
+            </div>
+          </section>
+
+          <section id="course-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE DECISIONS</span>
+            <h2 id="decisions-title">把分批学课，交给队列。</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>建图方向是 b → a</h3><p>数对 <code>[a, b]</code> 代表先学 <code>b</code> 再学 <code>a</code>。因此邻接表记录 <code>b</code> 的出边指向 <code>a</code>，同时 <code>indegree[a]++</code> 记录 <code>a</code> 有一个未履行的前置。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>只有入度减到 0 才能入队</h3><p>一门课可能有 3 个前置。修完其中一个，只是入度从 3 变成 2；只有等全部 3 个前置都修完、入度真正变为 0 时，才能放入学习队列。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>用 learned == numCourses 判环</h3><p>如果图中有环，环上的节点由于互相等待，入度永远不可能降为 0。队列提前排空时，只要 <code>learned &lt; numCourses</code>，就证明有环死锁。</p></div></li>
+            </ol>
+            <div class="article-insight"><span class="section-index">为什么是广度优先遍历？</span><p>第一批入队的是一开始就无要求的课；学完第一批，解锁出第二批；再学完第二批，解锁出第三批。这种按依赖层次层层推进的过程，本质上就是有向图上的 BFS。</p></div>
+          </section>
+
+          <section id="c-implementation" class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / C IMPLEMENTATION</span>
+            <h2 id="code-title">入度数组与队列的紧凑配合。</h2>
+            <p>这段代码来自仓库解法。使用静态邻接表建图并统计入度，队列保存当前可学课程，单循环即可完成拓扑推进与环检测。</p>
+            <div class="article-code-panel"><div class="article-code-caption"><span>C / Kahn 算法核心循环节选</span><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/026-lc207-course-schedule/main.c" target="_blank" rel="noopener noreferrer">查看完整代码 ↗</a></div><pre tabindex="0" aria-label="C 语言拓扑排序核心实现，可水平滚动"><code>/* 建图：b -&gt; a，并统计入度 */
+for (int i = 0; i &lt; prerequisitesSize; i++) {
+    int a = prerequisites[i][0];
+    int b = prerequisites[i][1];
+    graph[b][graphSize[b]] = a;
+    graphSize[b]++;
+    indegree[a]++;
+}
+
+/* 初始所有入度为 0 的课入队 */
+int queue[MAXN], front = 0, rear = 0;
+for (int i = 0; i &lt; numCourses; i++) {
+    if (indegree[i] == 0) {
+        queue[rear++] = i;
+    }
+}
+
+int learned = 0;
+while (front &lt; rear) {
+    int course = queue[front++];
+    learned++;
+    for (int i = 0; i &lt; graphSize[course]; i++) {
+        int next = graph[course][i];
+        indegree[next]--;
+        if (indegree[next] == 0) {
+            queue[rear++] = next;
+        }
+    }
+}
+return learned == numCourses;</code></pre></div>
+            <p class="article-small">仓库中使用固定数组模拟邻接表与队列，避免动态链表分配开销。对于超稀疏或极大规模图，亦可采用链式前向星压缩存储。</p>
+          </section>
+
+          <section id="mistakes" class="article-section" aria-labelledby="mistakes-title">
+            <span class="section-index">05 / NOTES TO KEEP</span>
+            <h2 id="mistakes-title">原复盘里，留下的四个提醒。</h2>
+            <p>这四条真实记录在当时的题目笔记中。有向图的建图方向、入度递减时机与出入队概念，极易因为概念混淆而产生 Bug。</p>
+            <dl class="article-review-list">
+              <div><dt><span>01</span> 先修关系的建图方向别建反</dt><dd><code>[a, b]</code> 的含义是“先学 <code>b</code> 才能学 <code>a</code>”，边应当是 <code>b -&gt; a</code>。建反会导致入度和出度的含义颠倒，永远排不出正确顺序。</dd></div>
+              <div><dt><span>02</span> 邻接表数组追加是赋值</dt><dd>写代码时注意 <code>graph[b][graphSize[b]] = a;</code> 是单等号赋值，不要误敲成判断 <code>==</code>，否则邻接边根本没有加进去。</dd></div>
+              <div><dt><span>03</span> 队列里放的是“当前入度为 0”的课</dt><dd>队列绝不是用来存放所有课程的，只存放“前置要求已经被全部满足，现在立即可以修读”的课。</dd></div>
+              <div><dt><span>04</span> 判环依据是 learned == numCourses</dt><dd>不要用队列是否为空来判断是否有环。队列总会变空，关键是队列变空时，真正学完的课程数 <code>learned</code> 是否等于总课程数。</dd></div>
+            </dl>
+          </section>
+
+          <section id="edge-cases" class="article-section" aria-labelledby="edges-title">
+            <span class="section-index">06 / CHECK THE EDGES</span>
+            <h2 id="edges-title">用几种典型形态，检查边界。</h2>
+            <div class="article-case-grid">
+              <div><span class="article-case-result">返回 true</span><h3>毫无先修限制</h3><code>prerequisites = []</code><p>所有课程初始入度均为 0，第一步全部入队，一轮顺次学完。</p></div>
+              <div><span class="article-case-result">返回 false</span><h3>两门课互相死锁</h3><code>[0, 1] 且 [1, 0]</code><p><code>0</code> 和 <code>1</code> 的入度都是 1，队列初始为空，直接返回 false。</p></div>
+              <div><span class="article-case-result">返回 false</span><h3>部分课程在环中</h3><code>0-&gt;3 正常，1&lt;-&gt;2 互锁</code><p><code>0</code> 和 <code>3</code> 顺利学完，但 <code>1</code> 和 <code>2</code> 无法进入队列，最终 <code>learned = 2 &lt; 4</code> 返回 false。</p></div>
+              <div><span class="article-case-result">返回 true</span><h3>多起点并行展开</h3><code>0 和 1 共同解锁 2</code><p><code>0</code> 和 <code>1</code> 同时在第一批队列，待两者先后出队后，<code>2</code> 的入度彻底减为 0 顺利解锁。</p></div>
+            </div>
+          </section>
+
+          <section id="complexity" class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">07 / TAKEAWAY</span>
+            <h2 id="complexity-title">从网格 BFS 到图论拓扑序。</h2>
+            <p>从笔记 001 的网格 BFS，到笔记 004 的有向图拓扑排序，队列承担的核心角色是一脉相承的：<strong>每一轮只处理当前已经就绪的节点，在推进的同时顺水推舟地解锁下一轮</strong>。入度不仅是一个数字，更是依赖关系的计数器。</p>
+            <div class="article-complexity"><div><span>时间复杂度</span><strong>O(V + E)</strong><p>每个课程节点入队一次，每条先修边仅遍历一次。</p></div><div><span>空间复杂度</span><strong>O(V + E)</strong><p>邻接表、入度数组与队列的存储开销。</p></div></div>
+            <p class="article-small">上述复杂度对应图论通用链表实现。仓库二维静态数组写法空间为 O(V²)。本页步进演示保留历史帧以支持回溯。</p>
+          </section>
+
+          <section id="sources" class="article-section article-sources" aria-labelledby="sources-title">
+            <span class="section-index">SOURCE NOTES</span>
+            <h2 id="sources-title">题目与原始记录</h2>
+            <p>本篇根据公开刷题仓库里的实现、样例与错误记录整理，保留原有解法的关键细节。</p>
+            <ul><li><a href="https://leetcode.cn/problems/course-schedule/" target="_blank" rel="noopener noreferrer">LeetCode 207 · 课程表 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/026-lc207-course-schedule/main.c" target="_blank" rel="noopener noreferrer">仓库里的 C 实现 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/026-lc207-course-schedule/notes.md" target="_blank" rel="noopener noreferrer">原始解题笔记与错误记录 <span aria-hidden="true">↗</span></a></li></ul>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./range-sum-mutable.html"><span class="nav-dir">← 上一篇实践笔记</span><span>003 树状数组与动态区间和</span></a>
+            <span></span>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="笔记目录"><span class="section-index">ON THIS PAGE</span><nav aria-label="本文目录"><a href="#course-demo">拓扑排序演示</a><a href="#course-decisions">入度核心决策</a><a href="#c-implementation">C 实现节选</a><a href="#mistakes">四个错误提醒</a><a href="#edge-cases">典型形态检查</a><a href="#complexity">复杂度与小结</a></nav><p>前置依赖有向图，<br>入度归零方开学。</p></aside>
+      </div>
+    </main>
+    <footer class="site-footer"><a href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a><a href="#article-top">回到顶部 <span aria-hidden="true">↑</span></a></footer>
+  </div>
+</body>
+</html>
