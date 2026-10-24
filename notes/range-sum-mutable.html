@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 307 区域和检索 - 数组可修改：树状数组如何让单点修改与区间查询都在 O(log n) 完成，为什么 lowbit 能同时负责两端。附步进演示与 C 实现节选。">
+  <meta name="theme-color" content="#101615">
+  <title>树状数组：为什么 lowbit 既能向前求和，又能向后更新 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <script type="module" src="../fenwick-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 003</div>
+        <h1>树状数组：<br>为什么 lowbit 既能向前求和，<span class="mint">又能向后更新</span></h1>
+        <p class="article-deck">这是一道 CSP 备考中的 LeetCode 动态区间和练习。单点修改与区间查询看似是一对矛盾：朴素数组求和是 O(n)，前缀和数组修改是 O(n)。复盘这道题时，关键是用 Binary Indexed Tree（树状数组）在两端取得平衡，依靠 x &amp; -x 快速跳跃。</p>
+        <div class="article-meta"><span>C 语言</span><span>树状数组</span><span>LeetCode 307 · 中等</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="树状数组与区域和检索刷题复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM</span>
+            <h2 id="problem-title">求和与修改，两头都要快。</h2>
+            <p>题目要求维护一个整数数组，支持两个操作：把某个位置的数值改成 <code>val</code>，以及查询闭区间 <code>[left, right]</code> 内所有数字之和。</p>
+            <p>如果用普通数组，单点修改是 <code>O(1)</code>，但每次区间求和都要从头加到尾，是 <code>O(n)</code>；如果用普通前缀和，区间查询是 <code>O(1)</code>，但修改一个数就要把后面所有前缀和都重算一遍，变成 <code>O(n)</code>。当两种操作频繁交替时，任何一种极端都会超时。树状数组（Fenwick Tree）用巧夺天工的二进制分段，让修改和求和都能在 <code>O(log n)</code> 内完成。</p>
+          </section>
+
+          <section id="fenwick-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">向后累加更新，向前跳跃求和。</h2>
+            <p>标准样例 <code>nums = [1, 3, 5, 7, 9]</code>。点击“下一步”，观察原数组如何构建树状数组，以及执行 <code>update</code> 与 <code>sumRange</code> 时各个节点的树形传递过程。</p>
+            <div class="fenwick-demo-panel">
+              <div class="fenwick-demo-heading">
+                <span>树状数组 · 交互步进</span>
+                <span id="fenwick-op-badge">初始化</span>
+              </div>
+              <div class="fenwick-stage">
+                <div class="fenwick-visuals">
+                  <div class="fenwick-row">
+                    <span class="fenwick-row-label">原数组 nums (0-based)</span>
+                    <div id="fenwick-nums" class="fenwick-grid" role="group" aria-label="原数组元素"></div>
+                  </div>
+                  <div class="fenwick-row">
+                    <span class="fenwick-row-label">树状数组 tree (1-based，每个节点管辖 lowbit(x) 个元素)</span>
+                    <div id="fenwick-tree" class="fenwick-grid" role="group" aria-label="树状数组节点"></div>
+                  </div>
+                  <ul class="fenwick-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-active"></span> 当前操作涉及的元素 / 树节点</li>
+                    <li><span class="legend-swatch swatch-tree"></span> 树节点管辖区间</li>
+                  </ul>
+                </div>
+                <div class="fenwick-readout">
+                  <div class="fenwick-metrics">
+                    <div><span>当前步骤</span><p><strong id="fenwick-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="fenwick-status" role="status" aria-live="polite" aria-atomic="true">初始状态：树状数组为空。点击“下一步”开始建树与操作演示。</p>
+                  <p class="fenwick-reading-hint">修改时沿 x += lowbit(x) 向后传递差值；求前缀和时沿 x -= lowbit(x) 向前收集区间和。</p>
+                </div>
+              </div>
+              <div id="fenwick-controls" class="fenwick-controls" hidden>
+                <div class="fenwick-scenario-field">
+                  <label for="fenwick-scenario">选择情形</label>
+                  <select id="fenwick-scenario">
+                    <option value="classic">经典样例 [1, 3, 5, 7, 9] · 查询与修改</option>
+                    <option value="power_of_two">2 的幂次规模 [2, 4, 6, 8] · 观察大区间节点</option>
+                    <option value="single_update">连续修改 [3, 2, 4, 5, 1, 6] · 观察更新传播链</option>
+                  </select>
+                </div>
+                <div class="fenwick-step-buttons">
+                  <button id="fenwick-prev" type="button">← 上一步</button>
+                  <button id="fenwick-next" type="button">下一步 →</button>
+                  <button id="fenwick-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="fenwick-noscript">步进演示需要 JavaScript。上面保留的是算法步骤；继续阅读可以看到完整树状数组逻辑与实现要点。</p></noscript>
+            </div>
+          </section>
+
+          <section id="fenwick-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE DECISIONS</span>
+            <h2 id="decisions-title">用 lowbit，分出不重不漏的段落。</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>树下标从 1 开始（1-based）</h3><p>树状数组的下标必须从 <code>1</code> 开始，因为 <code>lowbit(0) = 0</code> 会陷入死循环。原数组的 <code>index</code> 进入树状数组必须映射为 <code>index + 1</code>。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>lowbit(x) = x &amp; (-x)</h3><p>计算机采用补码表示负数，<code>-x = ~x + 1</code>。两者按位与，恰好只保留了二进制中最右侧的那个 <code>1</code>。这个值就是节点 <code>tree[x]</code> 管辖的连续元素个数。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>区间和差分：两端前缀和相减</h3><p>任意闭区间 <code>[left, right]</code> 的和，等于 <code>prefix(right + 1) - prefix(left)</code>。通过向前跳步求出两个前缀和相减，无需维护复杂区间合并逻辑。</p></div></li>
+            </ol>
+            <div class="article-insight"><span class="section-index">为什么跳步次数不超过 log n？</span><p>任何正整数在二进制下最多只有 $\log_2 n$ 个 <code>1</code>。求前缀和时每次抹去最低位的 1（向前跳），修改时每次把最低位的 1 进位（向后跳），跳步次数被严格限制在对数级别。</p></div>
+          </section>
+
+          <section id="c-implementation" class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / C IMPLEMENTATION</span>
+            <h2 id="code-title">两组循环，搞定向前与向后。</h2>
+            <p>这段代码来自仓库解法。结构体同时维护当前数组与树状数组，<code>add</code> 负责向后传播差值，<code>prefix</code> 负责向前收集前缀和。</p>
+            <div class="article-code-panel"><div class="article-code-caption"><span>C / 树状数组核心操作节选</span><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/034-lc307-range-sum-query-mutable/main.c" target="_blank" rel="noopener noreferrer">查看完整代码 ↗</a></div><pre tabindex="0" aria-label="C 语言树状数组核心实现，可水平滚动"><code>int lowbit(int x) {
+    return x &amp; -x;
+}
+
+/* 向后更新：沿父节点链将 delta 累加至所有包含 index 的区间 */
+void add(NumArray *obj, int index, int delta) {
+    while (index &lt;= obj-&gt;n) {
+        obj-&gt;tree[index] += delta;
+        index += lowbit(index);
+    }
+}
+
+/* 向前求和：沿二进制不相交区间累加 [1, i] 的前缀和 */
+int prefix(NumArray *obj, int i) {
+    int sum = 0;
+    while (i &gt; 0) {
+        sum += obj-&gt;tree[i];
+        i -= lowbit(i);
+    }
+    return sum;
+}
+
+void numArrayUpdate(NumArray *obj, int index, int val) {
+    int delta = val - obj-&gt;num[index];
+    add(obj, index + 1, delta);
+    obj-&gt;num[index] = val;
+}
+
+int numArraySumRange(NumArray *obj, int left, int right) {
+    return prefix(obj, right + 1) - prefix(obj, left);
+}</code></pre></div>
+            <p class="article-small">仓库中使用 <code>malloc</code> 分配 <code>n + 1</code> 大小的 <code>tree</code> 数组，并在使用完毕后显式通过 <code>numArrayFree</code> 释放内存。</p>
+          </section>
+
+          <section id="mistakes" class="article-section" aria-labelledby="mistakes-title">
+            <span class="section-index">05 / NOTES TO KEEP</span>
+            <h2 id="mistakes-title">原复盘里，留下的五个提醒。</h2>
+            <p>这五条真实记录在当时的题目笔记中。树状数组的代码极度精悍，但下标偏差、差值更新和内存管理很容易埋下隐患。</p>
+            <dl class="article-review-list">
+              <div><dt><span>01</span> 结构体需要同时存原数组</dt><dd>更新时需要计算差值 <code>delta = val - oldValue</code>，所以必须保留一份当前真实值的 <code>num</code> 数组，不能以为有了 <code>tree</code> 就能丢掉原数组。</dd></div>
+              <div><dt><span>02</span> 建树时不能只开空间不插入</dt><dd>分配完 <code>tree</code> 数组清零后，必须对每个元素调用 <code>add(obj, i + 1, nums[i])</code> 把初始值插入树中，只复制原数组相当于建了一棵全零树。</dd></div>
+              <div><dt><span>03</span> 修改只需定位受影响节点</dt><dd><code>update</code> 绝不能重新遍历数组重建整棵树。先算差值 <code>delta</code>，更新原数组，再把 <code>delta</code> 单路传给 <code>add</code>，复杂度才是真正的 <code>O(log n)</code>。</dd></div>
+              <div><dt><span>04</span> 树下标与前缀和偏移别搞错</dt><dd><code>index</code> 进入树要加 1；区间 <code>[left, right]</code> 的和对应的是 <code>prefix(right + 1) - prefix(left)</code>，左端点 <code>left</code> 不能再加 1，否则会少扣除第 <code>left</code> 个数。</dd></div>
+              <div><dt><span>05</span> 销毁时先释放内层动态数组</dt><dd>在 C 语言中，释放 <code>obj</code> 前必须先释放 <code>obj-&gt;num</code> 和 <code>obj-&gt;tree</code>，最后再释放 <code>obj</code> 本身，防止内存泄漏。</dd></div>
+            </dl>
+          </section>
+
+          <section id="edge-cases" class="article-section" aria-labelledby="edges-title">
+            <span class="section-index">06 / CHECK THE EDGES</span>
+            <h2 id="edges-title">用几个典型情形，检查边界。</h2>
+            <div class="article-case-grid">
+              <div><span class="article-case-result">返回 5</span><h3>只有一个元素</h3><code>nums = [5], sumRange(0, 0)</code><p>树中只有 <code>tree[1] = 5</code>，单次前缀和直接返回 5。</p></div>
+              <div><span class="article-case-result">正确累加</span><h3>多次修改同一位置</h3><code>update(1, 4) -&gt; update(1, 9)</code><p>每次根据新值与当前存的旧值计算差值 <code>delta</code>，不会产生增量堆积。</p></div>
+              <div><span class="article-case-result">全段覆盖</span><h3>查询整个数组</h3><code>sumRange(0, n - 1)</code><p>计算 <code>prefix(n) - prefix(0)</code>，因为 <code>prefix(0) = 0</code>，直接给出全数组之和。</p></div>
+              <div><span class="article-case-result">依然正确</span><h3>数组包含负数</h3><code>nums = [-2, 0, 3, -5]</code><p><code>lowbit</code> 依赖的是数组下标的二进制，与元素正负无关，差值加减完全适用。</p></div>
+            </div>
+          </section>
+
+          <section id="complexity" class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">07 / TAKEAWAY</span>
+            <h2 id="complexity-title">在两个极端之间，找到巧妙的平衡点。</h2>
+            <p>普通数组查询慢（$O(n)$），前缀和数组修改慢（$O(n)$）。树状数组的核心思想是<strong>通过二进制的权值拆分，让每个节点只对特定的一部分区间负责</strong>，从而让修改和查询均平摊到优雅的 $O(\log n)$。</p>
+            <div class="article-complexity"><div><span>单次修改时间</span><strong>O(log n)</strong><p>沿 lowbit 向后最多跳 $\log_2 n$ 次。</p></div><div><span>单次查询时间</span><strong>O(log n)</strong><p>沿 lowbit 向前最多跳 $\log_2 n$ 次。</p></div></div>
+            <p class="article-small">建树总时间为 O(n log n)，额外空间复杂度为 O(n)。演示模块额外保留历史快照供前后步进。</p>
+          </section>
+
+          <section id="sources" class="article-section article-sources" aria-labelledby="sources-title">
+            <span class="section-index">SOURCE NOTES</span>
+            <h2 id="sources-title">题目与原始记录</h2>
+            <p>本篇根据公开刷题仓库里的实现、样例与错误记录整理，保留原有解法的关键细节。</p>
+            <ul><li><a href="https://leetcode.cn/problems/range-sum-query-mutable/" target="_blank" rel="noopener noreferrer">LeetCode 307 · 区域和检索 - 数组可修改 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/034-lc307-range-sum-query-mutable/main.c" target="_blank" rel="noopener noreferrer">仓库里的 C 实现 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/034-lc307-range-sum-query-mutable/notes.md" target="_blank" rel="noopener noreferrer">原始解题笔记与错误记录 <span aria-hidden="true">↗</span></a></li></ul>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./largest-rectangle.html"><span class="nav-dir">← 上一篇实践笔记</span><span>002 柱状图中最大的矩形</span></a>
+            <span></span>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="笔记目录"><span class="section-index">ON THIS PAGE</span><nav aria-label="本文目录"><a href="#fenwick-demo">树状数组演示</a><a href="#fenwick-decisions">lowbit 决策</a><a href="#c-implementation">C 实现节选</a><a href="#mistakes">五个错误提醒</a><a href="#edge-cases">典型边界检查</a><a href="#complexity">复杂度与平衡点</a></nav><p>二进制的进位与借位，<br>管住区间的增与减。</p></aside>
+      </div>
+    </main>
+    <footer class="site-footer"><a href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a><a href="#article-top">回到顶部 <span aria-hidden="true">↑</span></a></footer>
+  </div>
+</body>
+</html>

@@ -96,3 +96,28 @@ export function urlDecode(text) {
 export function utf8ByteLength(text) {
   return utf8Bytes(text).byteLength;
 }
+
+/** 格式化 JSON 文本，带 2 个空格缩进；空输入返回空字符串。 */
+export function jsonFormat(text) {
+  requireUnicodeText(text);
+  if (text.trim() === "") return "";
+  try {
+    const value = JSON.parse(text);
+    return JSON.stringify(value, null, 2);
+  } catch (error) {
+    throw new SyntaxError(`JSON 格式无效：${error.message}`, { cause: error });
+  }
+}
+
+/** 压缩 JSON 文本，去除冗余空白；空输入返回空字符串。 */
+export function jsonMinify(text) {
+  requireUnicodeText(text);
+  if (text.trim() === "") return "";
+  try {
+    const value = JSON.parse(text);
+    return JSON.stringify(value);
+  } catch (error) {
+    throw new SyntaxError(`JSON 格式无效：${error.message}`, { cause: error });
+  }
+}
+
