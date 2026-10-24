@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 994 腐烂的橘子：多源 BFS 如何按层计时，为什么队列长度是 rear - front。附逐分钟演示与 C 实现节选。">
+  <meta name="theme-color" content="#101615">
+  <title>腐烂的橘子：为什么一分钟对应 BFS 的一层 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <script type="module" src="../oranges-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 001</div>
+        <h1>腐烂的橘子：<br>为什么一分钟对应 <span class="mint">BFS 的一层</span></h1>
+        <p class="article-deck">这是一道 CSP 备考中的 LeetCode 练习。一分钟里，可以有多颗橘子同时腐烂。复盘这道题时，关键是让队列的“一层”，对应题目中的一分钟。</p>
+        <div class="article-meta"><span>C 语言</span><span>多源 BFS</span><span>LeetCode 994 · 中等</span><span>整理于 <time datetime="2026-10-24">2026.10.24</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="腐烂的橘子刷题复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM</span>
+            <h2 id="problem-title">让所有起点，一起出发。</h2>
+            <p>网格里的 <code>0</code> 是空格，<code>1</code> 是新鲜橘子，<code>2</code> 是腐烂橘子。每过一分钟，腐烂会沿上下左右传给相邻的新鲜橘子。要找的是全部新鲜橘子腐烂所需的最少时间；如果有橘子始终无法被感染，答案就是 <code>-1</code>。</p>
+            <p>这道题的难点集中在两个词：<strong>同时</strong>、<strong>一分钟</strong>。所有初始腐烂源从第 0 分钟一起扩散；这一分钟刚腐烂的橘子，要到下一分钟才继续向外传播。</p>
+          </section>
+
+          <section id="orange-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">一层一层，看时间往前走。</h2>
+            <p>仓库里的 3 × 3 样例需要 4 分钟。按“下一分钟”，观察这一轮同时改变的格子；也可以换一个情形，看看多个起点和无法到达时的区别。</p>
+            <div class="orange-demo-panel">
+              <div class="orange-demo-heading"><span>多源 BFS · 手动演示</span><span>每一步 = 一分钟</span></div>
+              <div class="orange-stage">
+                <div>
+                  <div id="orange-grid" class="orange-grid" role="group" aria-label="橘子状态网格">
+                    <span class="orange-cell" data-value="2" aria-label="第 1 行第 1 列，腐烂">2</span><span class="orange-cell" data-value="1" aria-label="第 1 行第 2 列，新鲜">1</span><span class="orange-cell" data-value="1" aria-label="第 1 行第 3 列，新鲜">1</span>
+                    <span class="orange-cell" data-value="1" aria-label="第 2 行第 1 列，新鲜">1</span><span class="orange-cell" data-value="1" aria-label="第 2 行第 2 列，新鲜">1</span><span class="orange-cell" data-value="0" aria-label="第 2 行第 3 列，空格">0</span>
+                    <span class="orange-cell" data-value="0" aria-label="第 3 行第 1 列，空格">0</span><span class="orange-cell" data-value="1" aria-label="第 3 行第 2 列，新鲜">1</span><span class="orange-cell" data-value="1" aria-label="第 3 行第 3 列，新鲜">1</span>
+                  </div>
+                  <ul class="orange-legend" aria-label="网格图例"><li><span data-value="0">0</span> 空格</li><li><span data-value="1">1</span> 新鲜</li><li><span data-value="2">2</span> 腐烂</li></ul>
+                </div>
+                <div class="orange-readout">
+                  <div class="orange-metrics"><div><span>已经过</span><p><strong id="orange-minute">0</strong> 分钟</p></div><div><span>剩余新鲜橘子</span><p><strong id="orange-fresh">6</strong> 颗</p></div></div>
+                  <p id="orange-status" role="status" aria-live="polite" aria-atomic="true">第 0 分钟：1 颗腐烂橘子，6 颗新鲜橘子。样例最终需要 4 分钟。</p>
+                  <p class="orange-reading-hint">格子中的数字始终表示状态。描边标出这一分钟刚腐烂的橘子。</p>
+                </div>
+              </div>
+              <div id="orange-controls" class="orange-controls" hidden>
+                <div class="orange-scenario-field"><label for="orange-scenario">选择情形</label><select id="orange-scenario"><option value="classic">标准样例 · 4 分钟</option><option value="multiple">多个腐烂起点</option><option value="blocked">无法到达的橘子</option><option value="ready">一开始就没有新鲜橘子</option></select></div>
+                <div class="orange-step-buttons"><button id="orange-prev" type="button">← 上一分钟</button><button id="orange-next" type="button">下一分钟 →</button><button id="orange-reset" type="button">重置</button></div>
+              </div>
+              <noscript><p class="orange-noscript">逐分钟演示需要 JavaScript。上面保留的是样例的初始网格；继续阅读可以看到它的解法与边界情况。</p></noscript>
+            </div>
+          </section>
+
+          <section id="bfs-layers" class="article-section" aria-labelledby="layers-title">
+            <span class="section-index">03 / THREE DECISIONS</span>
+            <h2 id="layers-title">用队列，划出一分钟的边界。</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>先把所有初始腐烂橘子入队</h3><p>扫描网格时统计 <code>fresh</code>，同时把每个 <code>2</code> 的坐标放进队列。它们都是第 0 层的起点，这样多个源就能一起扩散。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>先固定这一层有多少个元素</h3><p>进入一轮时记录 <code>size = rear - front</code>，随后只弹出这 <code>size</code> 个元素。处理过程中新增的坐标排在队尾，留到下一轮。这一层处理完，才执行一次 <code>minutes++</code>。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>发现新鲜邻居，立即标记再入队</h3><p>先把格子从 <code>1</code> 改成 <code>2</code>，再减少 <code>fresh</code>、加入队列。即使两个腐烂源同时碰到这个格子，也只会把它加入一次。</p></div></li>
+            </ol>
+            <div class="article-insight"><span class="section-index">为什么是最短时间？</span><p>每一层只向外走一步；一个格子第一次被访问时，就走过了它到任一腐烂源的最短可达路径。每步恰好用一分钟。当所有新鲜橘子都可达时，最晚被感染的那一层，就是全部腐烂需要的时间。</p></div>
+          </section>
+
+          <section id="c-implementation" class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / C IMPLEMENTATION</span>
+            <h2 id="code-title">时间在整层结束时增加。</h2>
+            <p>这段代码来自仓库解法，调整了排版，省略扫描初始化与队列函数。完整版本使用两个数组分别保存行、列坐标，每次调用都会重置 <code>front</code> 和 <code>rear</code>。</p>
+            <div class="article-code-panel"><div class="article-code-caption"><span>C / 核心循环节选</span><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/024-lc994-rotting-oranges/main.c" target="_blank" rel="noopener noreferrer">查看完整代码 ↗</a></div><pre tabindex="0" aria-label="C 语言多源 BFS 核心循环，可水平滚动"><code>/* 已统计 fresh，并将所有初始腐烂橘子入队。 */
+int minutes = 0;
+int dr[4] = {-1, 1, 0, 0};
+int dc[4] = {0, 0, -1, 1};
+
+while (!empty() &amp;&amp; fresh &gt; 0) {
+    int size = rear - front;
+    for (int i = 0; i &lt; size; i++) {
+        int r, c;
+        pop(&amp;r, &amp;c);
+        for (int d = 0; d &lt; 4; d++) {
+            int nr = r + dr[d];
+            int nc = c + dc[d];
+            if (nr &lt; 0 || nr &gt;= gridSize ||
+                nc &lt; 0 || nc &gt;= gridColSize[nr]) {
+                continue;
+            }
+            if (grid[nr][nc] == 1) {
+                grid[nr][nc] = 2;
+                fresh--;
+                push(nr, nc);
+            }
+        }
+    }
+    minutes++;
+}
+if (fresh == 0) {
+    return minutes;
+}
+return -1;</code></pre></div>
+            <p class="article-small">原题的行、列数均不超过 10。仓库使用固定容量的坐标队列，每个格子最多入队一次；若扩展到更大规模，需要相应调整容量。</p>
+          </section>
+
+          <section id="mistakes" class="article-section" aria-labelledby="mistakes-title">
+            <span class="section-index">05 / NOTES TO KEEP</span>
+            <h2 id="mistakes-title">原复盘里，留下的四个提醒。</h2>
+            <p>这四条都记录在当时的题目笔记里。把函数调用、队列区间和时间单位写清楚，才能让程序跟上题目的扩散规则。</p>
+            <dl class="article-review-list">
+              <div><dt><span>01</span> 函数调用要有括号</dt><dd><code>empty</code> 是函数，判断队列是否为空要调用 <code>empty()</code>。只写函数名，没有执行队列为空的判断。</dd></div>
+              <div><dt><span>02</span> 半开区间不用多加一</dt><dd><code>front</code> 指向下一个出队位置，<code>rear</code> 指向下一个入队位置。有效区间是 <code>[front, rear)</code>，长度为 <code>rear - front</code>。</dd></div>
+              <div><dt><span>03</span> 一分钟可以腐烂多颗橘子</dt><dd>如果每发现一颗新鲜橘子就增加时间，会把同时发生的扩散错误地排成先后发生。计时应放在一整层处理完之后。</dd></div>
+              <div><dt><span>04</span> 检查边界后，再访问格子</dt><dd>某个方向越界就用 <code>continue</code> 跳过，再尝试其他方向。先确认行、列合法，才能读取 <code>grid[nr][nc]</code>。</dd></div>
+            </dl>
+          </section>
+
+          <section id="edge-cases" class="article-section" aria-labelledby="edges-title">
+            <span class="section-index">06 / CHECK THE EDGES</span>
+            <h2 id="edges-title">用几个小网格，检查边界。</h2>
+            <div class="article-case-grid">
+              <div><span class="article-case-result">返回 0</span><h3>没有新鲜橘子</h3><code>[0, 2]</code><p><code>fresh</code> 一开始就是 0，不必扩散，也不必增加时间。</p></div>
+              <div><span class="article-case-result">返回 -1</span><h3>没有腐烂起点</h3><code>[1, 1]</code><p>有新鲜橘子，队列却为空，没有任何地方可以开始传播。</p></div>
+              <div><span class="article-case-result">返回 -1</span><h3>空格隔断了路径</h3><code>[2, 0, 1]</code><p>腐烂不能穿过空格。队列处理完还有新鲜橘子，说明无法全部到达。</p></div>
+              <div><span class="article-case-result">返回 3</span><h3>只有一行</h3><code>[2, 1, 1, 1]</code><p>每分钟只推进一个相邻格子，经过三层才能传到最后一颗。</p></div>
+            </div>
+          </section>
+
+          <section id="complexity" class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">07 / TAKEAWAY</span>
+            <h2 id="complexity-title">把“同时发生”交给队列的一层。</h2>
+            <p>这题留下的一条经验是：当多个起点同时扩散，并且每次移动的代价相同，可以先考虑多源 BFS。初始化决定从哪里一起出发，分层处理决定时间如何流动，入队时标记决定每个格子只被处理一次。</p>
+            <div class="article-complexity"><div><span>时间复杂度</span><strong>O(mn)</strong><p>扫描网格，每个格子最多入队一次，只检查四个方向。</p></div><div><span>空间复杂度</span><strong>O(mn)</strong><p>队列最多保存所有格子的坐标；直接修改网格作为访问标记。</p></div></div>
+            <p class="article-small">上述复杂度对应仓库中的 C 解法。本页演示额外保留了各分钟状态，以支持回看。</p>
+          </section>
+
+          <section id="sources" class="article-section article-sources" aria-labelledby="sources-title">
+            <span class="section-index">SOURCE NOTES</span>
+            <h2 id="sources-title">题目与原始记录</h2>
+            <p>本篇根据公开刷题仓库里的实现、样例与错误记录整理，保留原有解法的关键细节。</p>
+            <ul><li><a href="https://leetcode.com/problems/rotting-oranges/" target="_blank" rel="noopener noreferrer">LeetCode 994 · 腐烂的橘子 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/024-lc994-rotting-oranges/main.c" target="_blank" rel="noopener noreferrer">仓库里的 C 实现 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/024-lc994-rotting-oranges/notes.md" target="_blank" rel="noopener noreferrer">原始解题笔记与错误记录 <span aria-hidden="true">↗</span></a></li></ul>
+          </section>
+        </article>
+
+        <aside class="article-toc" aria-label="笔记目录"><span class="section-index">ON THIS PAGE</span><nav aria-label="本文目录"><a href="#orange-demo">逐分钟演示</a><a href="#bfs-layers">队列与分层</a><a href="#c-implementation">C 实现节选</a><a href="#mistakes">四个错误提醒</a><a href="#edge-cases">边界情况</a><a href="#complexity">复杂度与总结</a></nav><p>从一个小网格，<br>看清每一分钟。</p></aside>
+      </div>
+    </main>
+    <footer class="site-footer"><a href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a><a href="#article-top">回到顶部 <span aria-hidden="true">↑</span></a></footer>
+  </div>
+</body>
+</html>

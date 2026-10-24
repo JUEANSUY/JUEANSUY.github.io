@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 84 柱状图中最大的矩形：为什么单调栈能把两头延伸变简单，栈里存下标如何圈定左右边界。附步进演示与 C 实现节选。">
+  <meta name="theme-color" content="#101615">
+  <title>柱状图中最大的矩形：为什么栈里存下标，宽度看左右两端 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <script type="module" src="../histogram-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 002</div>
+        <h1>柱状图中最大的矩形：<br>为什么栈里存下标，<span class="mint">宽度看左右两端</span></h1>
+        <p class="article-deck">这是一道 CSP 备考中的 LeetCode 困难题练习。每根柱子都能向左右延伸，直到遇到比它矮的柱子。复盘这道题时，关键是用单调栈维护递增高度，并在弹栈时由当前位置和新栈顶自然圈定左右边界。</p>
+        <div class="article-meta"><span>C 语言</span><span>单调栈</span><span>LeetCode 84 · 困难</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="柱状图中最大的矩形刷题复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM</span>
+            <h2 id="problem-title">以每根柱子为基准，找它的最大跨度。</h2>
+            <p>给定一组柱子的高度，每个柱子的宽度都是 <code>1</code>，求由连续柱子勾勒出的最大矩形面积。矩形的高度不能超过所包含柱子中的最小值。</p>
+            <p>如果用暴力思路，我们会固定某根柱子作为矩形的高度，然后分别向左、向右扫描，找到<strong>左右两边第一个比它更矮的柱子</strong>。两边界之间的距离就是这根柱子能展开的最大宽度。但为每根柱子都做一次双向扫描，时间复杂度是 <code>O(n²)</code>。这道困难题的核心挑战就是：怎样在一次线性扫描中，把所有柱子的左右边界同时找齐？</p>
+          </section>
+
+          <section id="histogram-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">单调栈推进，看矩形如何框出。</h2>
+            <p>标准样例 <code>[2, 1, 5, 6, 2, 3]</code> 的最大面积是 10。点击“下一步”，观察每根柱子入栈时的单调性维护，以及遇到更矮柱子时触发出栈、结算局部矩形的过程。</p>
+            <div class="histogram-demo-panel">
+              <div class="histogram-demo-heading"><span>单调栈 · 步进演示</span><span>每一步 = 入栈或弹栈结算</span></div>
+              <div class="histogram-stage">
+                <div>
+                  <div id="histogram-chart" class="histogram-chart" role="group" aria-label="柱状图与结算矩形">
+                    <div class="histogram-col"><div class="histogram-bar" style="height:43px"><span class="histogram-bar-val">2</span></div><span class="histogram-idx-val">[0]</span></div>
+                    <div class="histogram-col"><div class="histogram-bar" style="height:22px"><span class="histogram-bar-val">1</span></div><span class="histogram-idx-val">[1]</span></div>
+                    <div class="histogram-col"><div class="histogram-bar" style="height:108px"><span class="histogram-bar-val">5</span></div><span class="histogram-idx-val">[2]</span></div>
+                    <div class="histogram-col"><div class="histogram-bar" style="height:130px"><span class="histogram-bar-val">6</span></div><span class="histogram-idx-val">[3]</span></div>
+                    <div class="histogram-col"><div class="histogram-bar" style="height:43px"><span class="histogram-bar-val">2</span></div><span class="histogram-idx-val">[4]</span></div>
+                    <div class="histogram-col"><div class="histogram-bar" style="height:65px"><span class="histogram-bar-val">3</span></div><span class="histogram-idx-val">[5]</span></div>
+                  </div>
+                  <ul class="histogram-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-stack"></span> 栈内柱子</li>
+                    <li><span class="legend-swatch swatch-active"></span> 当前扫描</li>
+                    <li><span class="legend-swatch swatch-calc"></span> 结算高度</li>
+                    <li><span class="legend-swatch swatch-rect"></span> 跨越宽度</li>
+                  </ul>
+                </div>
+                <div class="histogram-readout">
+                  <div class="histogram-metrics">
+                    <div><span>当前栈内下标</span><p><strong id="histogram-stack">[]</strong></p></div>
+                    <div><span>当前结算面积</span><p><strong id="histogram-current-area">-</strong></p></div>
+                    <div><span>历史最大面积</span><p><strong id="histogram-max-area">0</strong></p></div>
+                  </div>
+                  <p id="histogram-status" role="status" aria-live="polite" aria-atomic="true">初始状态：单调栈为空。准备从下标 0 开始顺序扫描。</p>
+                  <p class="histogram-reading-hint">栈顶比当前柱子高时触发出栈；弹出柱子的高乘以左右跨度，即为当前可能的最大面积。</p>
+                </div>
+              </div>
+              <div id="histogram-controls" class="histogram-controls" hidden>
+                <div class="histogram-scenario-field">
+                  <label for="histogram-scenario">选择情形</label>
+                  <select id="histogram-scenario">
+                    <option value="classic">标准样例 [2, 1, 5, 6, 2, 3] · 面积 10</option>
+                    <option value="increasing">完全递增 [1, 2, 3, 4, 5] · 面积 9</option>
+                    <option value="decreasing">完全递减 [5, 4, 3, 2, 1] · 面积 9</option>
+                    <option value="plateau">平顶高度 [2, 4, 4, 4, 2] · 面积 12</option>
+                    <option value="single">单根柱子 [4] · 面积 4</option>
+                  </select>
+                </div>
+                <div class="histogram-step-buttons">
+                  <button id="histogram-prev" type="button">← 上一步</button>
+                  <button id="histogram-next" type="button">下一步 →</button>
+                  <button id="histogram-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="histogram-noscript">步进演示需要 JavaScript。上面保留的是初始柱状图；继续阅读可以看到完整单调栈逻辑与边界情况。</p></noscript>
+            </div>
+          </section>
+
+          <section id="stack-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE DECISIONS</span>
+            <h2 id="decisions-title">用递增栈，在弹栈时结算两端。</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>栈里只存下标，不存高度</h3><p>高度随时可以通过 <code>heights[idx]</code> 取到；但如果不存下标，出栈时就无法知道这根柱子在横坐标上的确切位置，进而无法计算矩形宽度。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>栈内严格保持高度单调递增</h3><p>当扫描到的新柱子比栈顶更矮时，栈顶柱子向右延伸的边界就找到了（就是当前位置 <code>i</code>）。它不能再往右扩展，必须立即弹出结算。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>弹出后的新栈顶，就是左边界</h3><p>因为栈里存的是单调递增序列，栈顶被弹出后，<strong>新的栈顶元素就是它左侧第一个比它更矮的柱子</strong>。左右边界瞬间由两端闭环锁死。</p></div></li>
+            </ol>
+            <div class="article-insight"><span class="section-index">为什么总时间是 O(n)？</span><p>尽管内层有一个 <code>while</code> 循环，但每根柱子至多只进栈一次、出栈一次。所有弹栈结算的总次数绝不会超过 $n$ 次，总耗时随数据规模呈纯线性增长。</p></div>
+          </section>
+
+          <section id="c-implementation" class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / C IMPLEMENTATION</span>
+            <h2 id="code-title">虚拟哨兵与弹栈宽度计算。</h2>
+            <p>这段代码来自仓库解法。在数组末尾引入一个高度为 <code>0</code> 的虚拟哨兵，能干净利接地在循环末尾把栈内残留的所有柱子全部逼出并完成结算，无需在循环后重写一段清栈代码。</p>
+            <div class="article-code-panel"><div class="article-code-caption"><span>C / 单调栈核心循环节选</span><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/032-lc84-largest-rectangle-in-histogram/main.c" target="_blank" rel="noopener noreferrer">查看完整代码 ↗</a></div><pre tabindex="0" aria-label="C 语言单调栈计算最大矩形面积，可水平滚动"><code>int largestRectangleArea(int *heights, int heightsSize) {
+    TOP = -1;
+    int max = 0;
+    for (int i = 0; i &lt;= heightsSize; i++) {
+        /* i == heightsSize 时用 0 作为虚拟哨兵，强制弹出栈内剩余元素 */
+        int curHeight = (i == heightsSize) ? 0 : heights[i];
+
+        while (TOP != -1 &amp;&amp; curHeight &lt; heights[stack[TOP]]) {
+            int idx = stack[TOP];
+            pop();
+
+            int right = i;
+            int height = heights[idx];
+            int width;
+
+            /* 若弹栈后栈空，说明左边没有更矮的柱子，可一路延伸到 0 */
+            if (TOP == -1) {
+                width = right;
+            } else {
+                width = right - stack[TOP] - 1;
+            }
+
+            int area = height * width;
+            if (area &gt; max) {
+                max = area;
+            }
+        }
+
+        if (i &lt; heightsSize) {
+            push(i);
+        }
+    }
+    return max;
+}</code></pre></div>
+            <p class="article-small">仓库实现使用固定大小静态数组 <code>stack[MAXN]</code> 模拟栈，<code>TOP</code> 初始为 <code>-1</code>，避免动态内存分配开销。</p>
+          </section>
+
+          <section id="mistakes" class="article-section" aria-labelledby="mistakes-title">
+            <span class="section-index">05 / NOTES TO KEEP</span>
+            <h2 id="mistakes-title">原复盘里，留下的四个提醒。</h2>
+            <p>这四条真实记录在当时的题目笔记中。单调栈的代码行数不多，但下标与高度的混淆、边界哨兵的处理，往往是容易卡壳的地方。</p>
+            <dl class="article-review-list">
+              <div><dt><span>01</span> 栈里存下标，不存高度</dt><dd>栈里一定要存下标，需要高度时通过 <code>heights[stack[TOP]]</code> 查表。如果存了高度，弹出时就会丢掉位置信息，无法计算宽度。</dd></div>
+              <div><dt><span>02</span> 比较时不要拿高度和下标比</dt><dd>写循环条件时容易误写成 <code>curHeight &lt; stack[TOP]</code>。因为 <code>stack[TOP]</code> 是下标，必须用 <code>heights[stack[TOP]]</code> 取出柱子高度再做比较。</dd></div>
+              <div><dt><span>03</span> 虚拟哨兵避免修改原数组</dt><dd>在本地开大数组写 <code>heights[heightsSize] = 0</code> 往往能跑，但在判题平台上原数组长度固定，写越界会导致内存错误。用三元运算符 <code>(i == heightsSize) ? 0 : heights[i]</code> 可以安全地获得哨兵。</dd></div>
+              <div><dt><span>04</span> 弹栈后栈空与否的宽度计算</dt><dd>弹栈后若栈空，说明左边没有更矮的柱子，宽度就是 <code>right</code>（即下标 <code>i</code>）；若栈非空，宽度是 <code>right - stack[TOP] - 1</code>，千万别漏减 1。</dd></div>
+            </dl>
+          </section>
+
+          <section id="edge-cases" class="article-section" aria-labelledby="edges-title">
+            <span class="section-index">06 / CHECK THE EDGES</span>
+            <h2 id="edges-title">用几种典型形态，检查边界。</h2>
+            <div class="article-case-grid">
+              <div><span class="article-case-result">返回 4</span><h3>只有一根柱子</h3><code>[4]</code><p>唯一的柱子入栈，遇到哨兵 0 触发弹栈，宽度为 1，面积为 4。</p></div>
+              <div><span class="article-case-result">返回 9</span><h3>完全单调递增</h3><code>[1, 2, 3, 4, 5]</code><p>扫描过程中不触发任何弹栈，直到遇到末尾哨兵 0，逆序连续弹出所有柱子，最大为 <code>3 × 3 = 9</code>。</p></div>
+              <div><span class="article-case-result">返回 9</span><h3>完全单调递减</h3><code>[5, 4, 3, 2, 1]</code><p>每扫描一根新柱子都会触发弹栈，栈深度始终不超过 1，最大为 <code>3 × 3 = 9</code>。</p></div>
+              <div><span class="article-case-result">返回 12</span><h3>平顶连续等高</h3><code>[2, 4, 4, 4, 2]</code><p>前几个等高柱子出栈时宽度未完全展开，但最后一个等高柱子出栈时左界一并越过，完整算出 <code>4 × 3 = 12</code>。</p></div>
+            </div>
+          </section>
+
+          <section id="complexity" class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">07 / TAKEAWAY</span>
+            <h2 id="complexity-title">让单调性，替我们省下二次扫描。</h2>
+            <p>这道困难题最精妙的地方在于：<strong>栈顶元素的左右两端，恰好分别是由“当前即将入栈的更矮柱子”与“弹出后的新栈顶”天然界定的</strong>。维持单调性的同时，自动完成了两端更矮位置的探测，将原本需要两头查找的 $O(n^2)$ 降到了纯线性的 $O(n)$。</p>
+            <div class="article-complexity"><div><span>时间复杂度</span><strong>O(n)</strong><p>所有柱子下标进栈一次、出栈一次，均摊线性时间。</p></div><div><span>空间复杂度</span><strong>O(n)</strong><p>栈的大小最多容纳全部柱子的下标。</p></div></div>
+            <p class="article-small">上述复杂度对应仓库中的 C 解法。本页步进演示额外保留了单调栈各步骤快照，以支持前后回看。</p>
+          </section>
+
+          <section id="sources" class="article-section article-sources" aria-labelledby="sources-title">
+            <span class="section-index">SOURCE NOTES</span>
+            <h2 id="sources-title">题目与原始记录</h2>
+            <p>本篇根据公开刷题仓库里的实现、样例与错误记录整理，保留原有解法的关键细节。</p>
+            <ul><li><a href="https://leetcode.cn/problems/largest-rectangle-in-histogram/" target="_blank" rel="noopener noreferrer">LeetCode 84 · 柱状图中最大的矩形 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/032-lc84-largest-rectangle-in-histogram/main.c" target="_blank" rel="noopener noreferrer">仓库里的 C 实现 <span aria-hidden="true">↗</span></a></li><li><a href="https://github.com/JUEANSUY/csp/blob/daf504f7d8f0d432f537b4e61acef9cc41ea5cfc/csp-practice/problems/032-lc84-largest-rectangle-in-histogram/notes.md" target="_blank" rel="noopener noreferrer">原始解题笔记与错误记录 <span aria-hidden="true">↗</span></a></li></ul>
+          </section>
+        </article>
+
+        <aside class="article-toc" aria-label="笔记目录"><span class="section-index">ON THIS PAGE</span><nav aria-label="本文目录"><a href="#histogram-demo">步进演示</a><a href="#stack-decisions">单调栈决策</a><a href="#c-implementation">C 实现节选</a><a href="#mistakes">四个错误提醒</a><a href="#edge-cases">边界形态检查</a><a href="#complexity">复杂度与总结</a></nav><p>在柱子起伏间，<br>看清单调栈边界。</p></aside>
+      </div>
+    </main>
+    <footer class="site-footer"><a href="../index.html#practice"><span aria-hidden="true">←</span> 回到学习与实践</a><a href="#article-top">回到顶部 <span aria-hidden="true">↑</span></a></footer>
+  </div>
+</body>
+</html>
