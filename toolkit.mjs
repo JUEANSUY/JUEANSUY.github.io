@@ -121,3 +121,54 @@ export function jsonMinify(text) {
   }
 }
 
+/** 将 Unix 时间戳（秒或毫秒）转换为格式化的北京时间与 ISO 时间字符串。 */
+export function timestampToDate(text) {
+  requireUnicodeText(text);
+  const trimmed = text.trim();
+  if (trimmed === "") return "";
+  let num = Number(trimmed);
+  if (!Number.isFinite(num)) {
+    throw new TypeError("请输入合法的数字时间戳（秒或毫秒）。");
+  }
+  // 10 位左右（秒级时间戳，小于 1e11）自动换算为毫秒
+  if (Math.abs(num) < 1e11) {
+    num = Math.round(num * 1000);
+  } else {
+    num = Math.round(num);
+  }
+  const date = new Date(num);
+  if (Number.isNaN(date.getTime())) {
+    throw new TypeError("时间戳超出有效日期范围。");
+  }
+  const beijingStr = date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+  const isoStr = date.toISOString();
+  const seconds = Math.floor(date.getTime() / 1000);
+  const millis = date.getTime();
+  return `北京时间 (UTC+8): ${beijingStr}\nISO 8601 (UTC): ${isoStr}\n秒级时间戳: ${seconds}\n毫秒时间戳: ${millis}`;
+}
+
+/** 将日期时间字符串解析并输出对应的 Unix 秒级与毫秒级时间戳。 */
+export function dateToTimestamp(text) {
+  requireUnicodeText(text);
+  const trimmed = text.trim();
+  if (trimmed === "") return "";
+  let parseInput = trimmed;
+  // 针对形如 2026-10-25 03:28:00 没有时区标记的常见输入，按北京时间 (+08:00) 缺省解析
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:\s+\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d+)?)?)?$/.test(trimmed)) {
+    parseInput = trimmed.replace(/\//g, "-").replace(/\s+/, "T");
+    if (!parseInput.includes("T")) parseInput += "T00:00:00";
+    else if (parseInput.split("T")[1].split(":").length === 2) parseInput += ":00";
+    parseInput += "+08:00";
+  }
+  const date = new Date(parseInput);
+  if (Number.isNaN(date.getTime())) {
+    throw new TypeError("无法解析输入的日期时间格式，请参考格式：YYYY-MM-DD HH:mm:ss 或 ISO 8601。");
+  }
+  const seconds = Math.floor(date.getTime() / 1000);
+  const millis = date.getTime();
+  const beijingStr = date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+  const isoStr = date.toISOString();
+  return `毫秒时间戳: ${millis}\n秒级时间戳: ${seconds}\n标准北京时间: ${beijingStr}\n标准 ISO 时间: ${isoStr}`;
+}
+
+

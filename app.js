@@ -1,4 +1,4 @@
-import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify } from './toolkit.mjs';
+import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify, timestampToDate, dateToTimestamp } from './toolkit.mjs';
 
 const $ = (id) => document.getElementById(id);
 const input = $('tool-input');
@@ -28,6 +28,11 @@ const tools = {
     sample: '{"name":"Jueansuy","skills":["C","Python","Web"],"site":"www.jueansuy.cn","local":true}',
     hint: '纯浏览器本地格式化与压缩 JSON。严格校验语法并提示错误位置，不上传任何数据。',
   },
+  timestamp: {
+    title: '时间戳转换', format: '时间信息',
+    sample: '1792873887',
+    hint: 'Unix 时间戳与北京时间（UTC+8）互相转换。支持 10 位秒级与 13 位毫秒级时间戳，纯本地计算。',
+  },
 };
 let selected = 'sha256';
 let mode = 'encode';
@@ -49,7 +54,10 @@ function inputCount() {
 function setBusy(busy) {
   runButton.disabled = busy;
   runButton.setAttribute('aria-busy', String(busy));
-  const label = selected === 'sha256' ? tools.sha256.title : selected === 'json' ? `${mode === 'encode' ? '格式化' : '压缩'} JSON` : `${mode === 'encode' ? '编码' : '解码'}文本`;
+  const label = selected === 'sha256' ? tools.sha256.title
+    : selected === 'json' ? `${mode === 'encode' ? '格式化' : '压缩'} JSON`
+    : selected === 'timestamp' ? `${mode === 'encode' ? '转北京时间' : '转时间戳'}`
+    : `${mode === 'encode' ? '编码' : '解码'}文本`;
   runButton.replaceChildren(document.createTextNode(busy ? '处理中…' : label));
   if (!busy) {
     const arrow = document.createElement('span');
@@ -84,11 +92,16 @@ function configure() {
   swapButton.hidden = isHash;
   modes.forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
-    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : '编码';
-    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : '解码';
+    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : selected === 'timestamp' ? '转为日期' : '编码';
+    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : selected === 'timestamp' ? '转时间戳' : '解码';
   });
   $('tool-hint').textContent = tools[selected].hint;
-  $('output-format').textContent = isHash ? tools[selected].format : selected === 'json' ? (mode === 'encode' ? '格式化 JSON' : '紧凑 JSON') : selected === 'base64' && mode === 'encode' ? '标准 Base64' : selected === 'url' && mode === 'encode' ? 'URI 参数值' : 'UTF-8 文本';
+  $('output-format').textContent = isHash ? tools[selected].format
+    : selected === 'json' ? (mode === 'encode' ? '格式化 JSON' : '紧凑 JSON')
+    : selected === 'timestamp' ? (mode === 'encode' ? '北京时间 / ISO' : 'Unix 时间戳')
+    : selected === 'base64' && mode === 'encode' ? '标准 Base64'
+    : selected === 'url' && mode === 'encode' ? 'URI 参数值'
+    : 'UTF-8 文本';
   invalidate('准备就绪，输入文本或试一个例子。');
 }
 
@@ -107,7 +120,8 @@ async function run() {
     const fn = selected === 'sha256' ? sha256
       : selected === 'base64' ? (mode === 'encode' ? base64Encode : base64Decode)
       : selected === 'url' ? (mode === 'encode' ? urlEncode : urlDecode)
-      : (mode === 'encode' ? jsonFormat : jsonMinify);
+      : selected === 'json' ? (mode === 'encode' ? jsonFormat : jsonMinify)
+      : (mode === 'encode' ? timestampToDate : dateToTimestamp);
     const result = await fn(text);
     if (serial !== requestSerial) return;
     output.value = result;
@@ -118,6 +132,7 @@ async function run() {
     $('tool-output-count').textContent = `${Array.from(result).length.toLocaleString('zh-CN')} 字符 · ${utf8ByteLength(result).toLocaleString('zh-CN')} 字节`;
     const verb = selected === 'sha256' ? '摘要已生成'
       : selected === 'json' ? (mode === 'encode' ? '格式化完成' : '压缩完成')
+      : selected === 'timestamp' ? '转换完成'
       : mode === 'encode' ? '编码完成' : '解码完成';
     setStatus(`${verb} · ${result === '' ? '输出为空字符串' : '输入内容未上传'}`, 'success');
   } catch (error) {
@@ -140,6 +155,8 @@ function loadExample() {
   const sample = tools[selected].sample;
   input.value = selected === 'json'
     ? (mode === 'decode' ? jsonFormat(sample) : jsonMinify(sample))
+    : selected === 'timestamp'
+    ? (mode === 'encode' ? '1792873887' : '2026-10-25 03:28:00')
     : mode === 'decode'
     ? (selected === 'base64' ? base64Encode(sample) : urlEncode(sample))
     : sample;

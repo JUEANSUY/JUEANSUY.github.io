@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 322 零钱兑换：完全背包动态规划解法，为什么贪心会失效，正序与逆序遍历的关键区别，以及初始化极大值的陷阱。附交互步进演示与 C 语言实现节选。">
+  <meta name="theme-color" content="#101615">
+  <title>零钱兑换：为什么完全背包要正序遍历，dp 代表什么 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="零钱兑换：为什么完全背包要正序遍历，dp 代表什么 · Jueansuy">
+  <meta property="og:description" content="复盘 LeetCode 322 零钱兑换：完全背包动态规划解法，为什么贪心会失效，正序与逆序遍历的关键区别，以及初始化极大值的陷阱。附交互步进演示与 C 语言实现节选。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/coin-change.html">
+  <meta name="twitter:card" content="summary">
+  <script type="module" src="../note-common.mjs"></script>
+  <script type="module" src="../coin-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="./index.html"><span aria-hidden="true">←</span> 回到实践笔记归档</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 005</div>
+        <h1>零钱兑换：<br>为什么完全背包要正序遍历，<span class="mint">dp 代表什么</span></h1>
+        <p class="article-deck">这是 CSP 备考中动态规划章节极具代表性的完全背包问题。初学者极易陷入“每次都拿最大面额”的贪心陷阱，或者误套 0/1 背包的逆序循环。复盘这道题时，最关键的是理清：当每种硬币可无限次使用时，状态转移应该如何无后效性地从小到大累积。</p>
+        <div class="article-meta"><span>C 语言</span><span>完全背包 / 动态规划</span><span>LeetCode 322 · 中等</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="零钱兑换与动态规划复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM & GREEDY TRAP</span>
+            <h2 id="problem-title">贪心的直觉，为什么在此处失效？</h2>
+            <p>给定一个整数数组 <code>coins</code> 表示不同面额的硬币，以及一个整数 <code>amount</code> 表示总金额。计算凑成总金额所需的<strong>最少硬币数</strong>。如果无法凑出，则返回 <code>-1</code>。你可以认为每种硬币的数量是无限的。</p>
+            <p>生活中的直觉常常告诉我们：尽可能先找最大面额的钱。例如面额 <code>[1, 2, 5]</code> 凑 11 元，先拿 5，再拿 5，最后拿 1，共 3 枚，确实是最优解。但这仅仅是因为特定面额恰好满足贪心选择性质。</p>
+            <div class="article-insight">
+              <strong>典型贪心反例：</strong>
+              <p>若面额为 <code>[1, 3, 4]</code>，目标金额为 <code>6</code> 元：</p>
+              <ul>
+                <li><strong>贪心算法</strong>：优先选最大的 <code>4</code>，剩下 <code>2</code> 只能用 <code>1 + 1</code>，总共需 <code>4 + 1 + 1 = 3</code> 枚；</li>
+                <li><strong>全局最优</strong>：选择两枚 <code>3</code> 元硬币，仅需 <code>3 + 3 = 2</code> 枚！</li>
+              </ul>
+              <p>贪心每一步只顾眼前的最大面额，从而错失了全局更紧凑的组合。必须通过<strong>动态规划（DP）</strong>穷尽所有合法的子问题最优解。</p>
+            </div>
+          </section>
+
+          <section id="coin-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">逐面额填表，步进推演最优转移。</h2>
+            <p>观察 <code>dp[j]</code> 如何随着硬币面额逐步被测试与更新。高亮方块展示了当前计算的目标金额 <code>j</code> 与来源前置金额 <code>j - coin</code> 之间的差额对比。</p>
+            <div class="coin-demo-panel">
+              <div class="coin-demo-heading">
+                <span>完全背包 DP 填表 · 步进演示</span>
+                <span>状态转移: dp[j] = min(dp[j], dp[j - coin] + 1)</span>
+              </div>
+              <div class="coin-stage">
+                <div class="coin-visuals">
+                  <div class="coin-row">
+                    <span class="coin-row-label">DP 状态数组（j 表示金额，数值表示凑齐 j 所需的最少硬币数）</span>
+                    <div id="coin-grid" class="coin-grid" role="group" aria-label="DP 数组单元格"></div>
+                  </div>
+                  <ul class="coin-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-active"></span> 当前计算目标 j</li>
+                    <li><span class="legend-swatch swatch-source"></span> 依赖前置 j - coin</li>
+                    <li><span class="legend-swatch swatch-valid"></span> 已有有效解</li>
+                    <li><span class="legend-swatch swatch-inf"></span> 暂时不可达 (∞)</li>
+                  </ul>
+                </div>
+                <div class="coin-readout">
+                  <div class="coin-metrics">
+                    <div><span>当前硬币面额</span><p><strong id="coin-current">—</strong></p></div>
+                    <div><span>当前目标金额</span><p><strong id="coin-target">—</strong></p></div>
+                    <div><span>推演步数</span><p><strong id="coin-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="coin-status" role="status" aria-live="polite" aria-atomic="true">初始化状态：dp[0]=0，其余设为 ∞。</p>
+                  <p class="coin-reading-hint">因为硬币可以无限次使用，所以每种硬币内层金额从 coin 到 amount 正序递增。</p>
+                </div>
+              </div>
+              <div id="coin-controls" class="coin-controls" hidden>
+                <div class="coin-scenario-field">
+                  <label for="coin-scenario">选择推演用例</label>
+                  <select id="coin-scenario">
+                    <option value="standard">经典用例 [1, 2, 5] 凑 11 元 · 答案 3 枚 (5+5+1)</option>
+                    <option value="greedy_trap">贪心反例 [1, 3, 4] 凑 6 元 · 验证 DP 得出 3+3=2 枚</option>
+                    <option value="unreachable">奇数不可达 [2] 凑 3 元 · 无法凑出返回 -1</option>
+                    <option value="larger_first">大面额组合 [2, 5, 10] 凑 14 元 · 答案 4 枚 (10+2+2)</option>
+                    <option value="zero_amount">边界 0 元 · 无需硬币直接返回 0</option>
+                  </select>
+                </div>
+                <div class="coin-step-buttons">
+                  <button id="coin-prev" type="button">← 上一步</button>
+                  <button id="coin-next" type="button">下一步 →</button>
+                  <button id="coin-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="coin-noscript">步进演示需要 JavaScript。下方保留了完整推导过程与 C 语言核心实现。</p></noscript>
+            </div>
+          </section>
+
+          <section id="coin-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE CRITICAL DECISIONS</span>
+            <h2 id="decisions-title">三个关键细节：为什么正序，怎么判负？</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>完全背包必须“从小到大（正序）”遍历</h3><p>在 0/1 背包（如 LeetCode 416）中，每个物品只能用一次，所以内层循环必须从大到小逆序，确保计算 <code>dp[j]</code> 时用到的 <code>dp[j - weight]</code> 尚未包含当前物品；而零钱兑换硬币可以<strong>无限次重复使用</strong>，所以内层循环必须从小到大正序推进，使得前面刚使用过的硬币在后续更大金额时能够自然复用。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>初始化不能只设 dp[0]，其余要设为极大值</h3><p>因为求的是<strong>最小值</strong>（<code>min</code>），如果数组默认全为 0，那么后续任何比较都会直接被 0 覆盖，完全无法得到正确答案。因此除 <code>dp[0] = 0</code> 外，<code>dp[1..amount]</code> 必须初始为一个不可能被超越的上限，如 <code>amount + 1</code>。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>用 dp[amount] == amount + 1 判定不可达</h3><p>所有硬币遍历完毕后，检查目标金额位。若 <code>dp[amount]</code> 依然保持初始的极大值，证明没有任何面额组合能够拼出该金额，严格返回 <code>-1</code>。</p></div></li>
+            </ol>
+          </section>
+
+          <section class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / THE C IMPLEMENTATION</span>
+            <h2 id="code-title">真实 C 语言实现节选</h2>
+            <p>选自 CSP 练习记录中已通过评测的源码。纯静态数组，无动态堆分配，运行极速。</p>
+            <div class="article-code-panel">
+              <div class="article-code-caption">
+                <span>030-lc322-coin-change / main.c</span>
+                <a href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 ↗</a>
+              </div>
+              <pre><code>int coinChange(int *coins, int coinsSize, int amount) {
+    int dp[MAXN];
+    for (int i = 0; i <= amount; i++) {
+        dp[i] = amount + 1; // 初始化为不可能达到的极大值
+    }
+    dp[0] = 0; // 凑出 0 元所需硬币为 0
+
+    for (int i = 0; i < coinsSize; i++) {
+        int num = coins[i];
+        for (int j = num; j <= amount; j++) { // 正序遍历：完全背包允许重复使用
+            if (dp[j - num] + 1 < dp[j]) {
+                dp[j] = dp[j - num] + 1;
+            }
+        }
+    }
+
+    if (dp[amount] == amount + 1) {
+        return -1; // 无法拼出该金额
+    }
+    return dp[amount];
+}</code></pre>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">05 / COMPLEXITY</span>
+            <h2 id="complexity-title">复杂度与空间压缩</h2>
+            <div class="article-complexity">
+              <div>
+                <span>时间复杂度</span>
+                <strong>O(N × M)</strong>
+                <p>N 为硬币种数（<code>coinsSize</code>），M 为目标金额（<code>amount</code>）。外层遍历每种面额，内层遍历对应金额区间，总迭代次数严格可控。</p>
+              </div>
+              <div>
+                <span>空间复杂度</span>
+                <strong>O(M)</strong>
+                <p>滚动数组优化，仅需维护大小为 <code>amount + 1</code> 的一维 DP 表，无需二维矩阵，极大节约栈空间。</p>
+              </div>
+            </div>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./course-schedule.html"><span class="nav-dir">← 上一篇实践笔记</span><span>004 课程表与拓扑排序</span></a>
+            <span></span>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="本篇目录">
+          <span class="section-index">CONTENTS</span>
+          <nav>
+            <a href="#problem-title">01 题目与贪心陷阱</a>
+            <a href="#demo-title">02 动态规划步进演示</a>
+            <a href="#decisions-title">03 三个关键细节</a>
+            <a href="#code-title">04 C 语言实现节选</a>
+            <a href="#complexity-title">05 复杂度分析</a>
+          </nav>
+          <p>零钱兑换是完全背包的标杆题目。彻底搞懂正序更新与初始值设定，是进阶背包动态规划的基础。</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践笔记 005</span>
+      <a href="#article-top">回到顶部 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

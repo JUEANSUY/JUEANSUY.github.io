@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序等 C 语言解题复盘与浏览器交互式步进演示。">
+  <meta name="theme-color" content="#101615">
+  <title>实践笔记归档 · 算法复盘与交互演示 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="实践笔记归档 · 算法复盘与交互演示 · Jueansuy">
+  <meta property="og:description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序、完全背包等 C 语言解题复盘与浏览器交互式步进演示。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/index.html">
+  <meta name="twitter:card" content="summary">
+</head>
+<body class="article-page notes-archive-page">
+  <a class="skip-link" href="#archive-content">跳到笔记归档内容</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="../index.html#practice"><span aria-hidden="true">←</span> 回到首页学习与实践</a>
+    </header>
+
+    <main id="archive-content">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTES ARCHIVE</div>
+        <h1>算法复盘与实践笔记<br><span class="mint">交互式演练与解题心得</span></h1>
+        <p class="article-deck">备考 CSP 与刷题练习中积累的算法记录。每篇笔记包含真实的错误复盘、C 语言核心实现节选，以及纯前端可离线运行的动态步进演示，直观展现数据流动与状态跃迁。</p>
+        <div class="article-meta">
+          <span>纯静态零依赖</span>
+          <span>C 语言实现</span>
+          <span>浏览器交互演练</span>
+          <span>持续整理中</span>
+        </div>
+      </header>
+
+      <section class="archive-section" aria-label="算法实践笔记列表">
+        <div class="archive-grid">
+
+          <article class="archive-card" aria-labelledby="note-005-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 005</span>
+              <span class="archive-card-tag">动态规划 · 完全背包</span>
+            </div>
+            <h2 id="note-005-title"><a href="./coin-change.html">零钱兑换：为什么完全背包要正序遍历，dp 代表什么</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 322《零钱兑换》。为什么大面额贪心在此处彻底失效，完全背包正序遍历与 0/1 背包逆序遍历的本质差异，以及初始化极大值陷阱。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 322 · 中等</span>
+              <span>完全背包 DP 步进演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./coin-change.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" aria-labelledby="note-004-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 004</span>
+              <span class="archive-card-tag">图论 · 拓扑排序 · BFS</span>
+            </div>
+            <h2 id="note-004-title"><a href="./course-schedule.html">课程表：为什么入度为 0 才是 BFS 拓扑排序的钥匙</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 207《课程表》。将先修关系建模为有向图，用 Kahn 算法消解入度推进学习，在队列排空时快速检测闭环死锁。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 207 · 中等</span>
+              <span>Kahn 算法步进演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./course-schedule.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" aria-labelledby="note-003-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 003</span>
+              <span class="archive-card-tag">数据结构 · 树状数组</span>
+            </div>
+            <h2 id="note-003-title"><a href="./range-sum-mutable.html">树状数组：为什么 lowbit 既能向前求和，又能向后更新</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 307《区域和检索 - 数组可修改》。解析二进制最低位 1 的位运算魔法，对数级单点维护与前缀求和，结构体内存安全管理。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 307 · 中等</span>
+              <span>lowbit 树形结构可视化</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./range-sum-mutable.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" aria-labelledby="note-002-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 002</span>
+              <span class="archive-card-tag">单调栈 · 几何极值</span>
+            </div>
+            <h2 id="note-002-title"><a href="./largest-rectangle.html">柱状图中最大的矩形：为什么栈里存下标，宽度看左右两端</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 84 困难题。详解单调递增栈的就近消除原理，为什么矩形宽度不能用累加，以及首尾哨兵如何彻底规避清栈边界特判。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 84 · 困难</span>
+              <span>单调栈步进与面积结算</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./largest-rectangle.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" aria-labelledby="note-001-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 001</span>
+              <span class="archive-card-tag">图论 · 网格广度优先搜索</span>
+            </div>
+            <h2 id="note-001-title"><a href="./rotting-oranges.html">腐烂的橘子：为什么一分钟对应 BFS 的一层</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 994。多源 BFS 初始化、队列按层计时的天然边界，以及为什么必须在入队瞬间标记状态，防止重复入队造成死循环。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 994 · 中等</span>
+              <span>3×3 网格分层扩散演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./rotting-oranges.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践与主页归档</span>
+      <a href="../index.html">返回首页 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>
