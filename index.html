@@ -15,7 +15,7 @@
   <div class="site-shell">
     <header class="site-header">
       <a class="brand" href="#home" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
-      <nav aria-label="主导航"><a href="#tools">工具箱</a><a href="#notes">实验笔记</a><a href="#about">关于</a></nav>
+      <nav aria-label="主导航"><a href="#tools">工具箱</a><a href="#practice">学习与实践</a><a href="#notes">实验笔记</a><a href="#about">关于</a></nav>
       <a class="header-link" href="#tools">动手试一下 <span aria-hidden="true">↗</span></a>
     </header>
 
@@ -70,8 +70,37 @@
         <noscript><p class="noscript-note">这些工具需要 JavaScript。启用后，文本仍只在本页处理。</p></noscript>
       </section>
 
+      <section id="practice" class="practice-section" aria-labelledby="practice-title">
+        <div class="section-heading"><div><span class="section-index">02 / LEARNING BY DOING</span><h2 id="practice-title">学习与实践<span class="mint">.</span></h2></div><p>做过的尝试，正在继续的兴趣。</p></div>
+        <div class="practice-grid">
+          <article class="project-card project-featured" aria-labelledby="graduation-title">
+            <div class="project-kicker"><span>毕业设计</span><span>离线研究原型</span></div>
+            <h3 id="graduation-title">PyPI 软件包<br class="project-title-break">动态行为检测实验</h3>
+            <p class="project-description">围绕 PyPI 软件包安装阶段的动态行为，在学长指导下完成项目实现与实验：从行为采集、日志解析和序列特征处理，到 LSTM 分类与实验分析。</p>
+            <ol class="project-flow" aria-label="项目技术流程">
+              <li><span>01 / COLLECT</span><strong>采集行为</strong><p>Docker 组织执行，Falco 采集事件，strace 辅助排查。</p></li>
+              <li><span>02 / PREPARE</span><strong>整理序列</strong><p>解析日志，整理软件包级行为序列与特征。</p></li>
+              <li><span>03 / EXPERIMENT</span><strong>训练与分析</strong><p>使用 PyTorch 构建 LSTM，分析分类结果与误报。</p></li>
+            </ol>
+            <details class="project-details"><summary>过程与局限 <span aria-hidden="true">+</span></summary><div><p>实验中记录了空序列、长序列、样本筛选和执行超时等问题，并比较不同事件数量设置对结果的影响。项目用于离线分析与实验验证，仍受行为触发范围、样本规模和长序列建模能力限制。</p></div></details>
+            <ul class="project-tags" aria-label="毕业设计技术"><li>Python</li><li>Shell</li><li>Docker</li><li>Falco / strace</li><li>PyTorch / LSTM</li></ul>
+          </article>
+          <article class="project-card" aria-labelledby="csp-title">
+            <div class="project-kicker"><span>算法练习</span><span aria-hidden="true">↗</span></div>
+            <h3 id="csp-title">CSP / C 语言刷题记录</h3>
+            <p class="project-description">备考 CSP 时建立的刷题记录仓库，用 C 语言练习 CSP 与 LeetCode 题目，整理代码、样例和解题复盘，方便回看练习过程。</p>
+            <a class="project-link" href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="project-card project-recent" aria-labelledby="minecraft-title">
+            <div class="project-kicker"><span>最近在玩</span><span>RECENT</span></div>
+            <h3 id="minecraft-title">Minecraft 生电生存</h3>
+            <p class="project-description">最近租用了一台 VPS，用于 Minecraft 生电生存。</p>
+          </article>
+        </div>
+      </section>
+
       <section id="notes" class="notes-section" aria-labelledby="notes-title">
-        <div class="section-heading"><div><span class="section-index">02 / FIELD NOTES</span><h2 id="notes-title">把一个概念弄明白<span class="mint">.</span></h2></div><p>边用，边理解。</p></div>
+        <div class="section-heading"><div><span class="section-index">03 / FIELD NOTES</span><h2 id="notes-title">把一个概念弄明白<span class="mint">.</span></h2></div><p>边用，边理解。</p></div>
         <div class="note-list">
           <details class="note"><summary><span class="note-number">01</span><div><span class="note-category">HASH / 内容指纹</span><h3>SHA-256 为什么没有“解密”按钮？</h3><p>摘要、加密、密码存储，先分清这三件事。</p></div><span class="note-open" aria-hidden="true">+</span></summary><div class="note-body"><p>SHA-256 会把输入转换为固定长度的摘要。改动一个字符，通常就会得到完全不同的结果。你可以在上面的工具里，把“你好”改成“你好！”，观察变化。</p><p>哈希没有对应的解密操作。不过，对容易猜到的输入，别人仍可逐个尝试并比较摘要。因此，直接用一次 SHA-256 保存密码并不合适；密码存储需要专门的方案。</p><button type="button" class="text-link note-example" data-example-tool="sha256">去做这个实验 <span aria-hidden="true">↗</span></button></div></details>
           <details class="note"><summary><span class="note-number">02</span><div><span class="note-category">ENCODING / 字节与文本</span><h3>Base64 看不懂，就代表安全吗？</h3><p>把中文和 emoji 编码，再亲手还原回来。</p></div><span class="note-open" aria-hidden="true">+</span></summary><div class="note-body"><p>Base64 是把字节表示成一组可打印字符的编码方式。它不需要密钥，知道编码规则就能解码，所以不能拿来保护秘密。</p><p>本页先把文本转为 UTF-8 字节，再做标准 Base64 编码。解码时也会检查结果是不是有效的 UTF-8 文本；图片或任意二进制数据的 Base64 不一定适合这个文本工具。</p><button type="button" class="text-link note-example" data-example-tool="base64">试试中文与 emoji <span aria-hidden="true">↗</span></button></div></details>
@@ -79,7 +108,7 @@
         </div>
       </section>
 
-      <section id="about" class="about-section" aria-labelledby="about-title"><div class="about-mark" aria-hidden="true">↗</div><div><span class="section-index">03 / ABOUT THIS CORNER</span><h2 id="about-title">一个慢慢长大的小站。</h2><p>不把“会了多少”当作开始的门槛。先做一点，记下一点，再把不明白的地方弄清楚。</p></div><div class="about-tag">LEARN<br>BUILD<br><span>REPEAT.</span></div></section>
+      <section id="about" class="about-section" aria-labelledby="about-title"><div class="about-mark" aria-hidden="true">↗</div><div><span class="section-index">04 / ABOUT THIS CORNER</span><h2 id="about-title">一个慢慢长大的小站。</h2><p>不把“会了多少”当作开始的门槛。先做一点，记下一点，再把不明白的地方弄清楚。</p></div><div class="about-tag">LEARN<br>BUILD<br><span>REPEAT.</span></div></section>
     </main>
     <footer class="site-footer"><span><span class="status-dot"></span> JUEANSUY / 保持好奇，继续动手。</span><a href="#home">回到顶部 <span aria-hidden="true">↑</span></a></footer>
   </div>
