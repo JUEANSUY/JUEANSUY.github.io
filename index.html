@@ -88,35 +88,78 @@
           <article class="project-card project-featured" aria-labelledby="graduation-title">
             <div class="project-kicker"><span>毕业设计</span><span>离线研究原型</span></div>
             <h3 id="graduation-title">PyPI 软件包<br class="project-title-break">动态行为检测实验</h3>
-            <p class="project-description">围绕 PyPI 软件包安装阶段的动态行为，在学长指导下完成项目实现与实验：从行为采集、日志解析和序列特征处理，到 LSTM 分类与实验分析。</p>
+            <p class="project-description">围绕 PyPI 开源软件包安装阶段的潜在恶意行为，在学长指导下完成项目全流程实现与离线实验：涵盖自动化动态执行采集、日志结构化解析、序列特征工程到 LSTM 深度学习分类与误报复盘。</p>
             <ol class="project-flow" aria-label="项目技术流程">
-              <li><span>01 / COLLECT</span><strong>采集行为</strong><p>Docker 组织执行，Falco 采集事件，strace 辅助排查。</p></li>
-              <li><span>02 / PREPARE</span><strong>整理序列</strong><p>解析日志，整理软件包级行为序列与特征。</p></li>
-              <li><span>03 / EXPERIMENT</span><strong>训练与分析</strong><p>使用 PyTorch 构建 LSTM，分析分类结果与误报。</p></li>
+              <li><span>01 / EXEC & CAPTURE</span><strong>动态采集</strong><p>Docker 容器隔离执行，Falco 实时捕获系统调用与安全事件，strace 跟踪子进程树。</p></li>
+              <li><span>02 / FEATURE PIPELINE</span><strong>序列工程</strong><p>解析结构化日志流，提取高维行为切片，统一处理长序列截断与短序列填充。</p></li>
+              <li><span>03 / MODEL & EVAL</span><strong>训练与复盘</strong><p>PyTorch 构建单层 LSTM 序列分类器，深入分析假阳性误报与恶意逃逸成因。</p></li>
             </ol>
-            <details class="project-details"><summary>过程与局限 <span aria-hidden="true">+</span></summary><div><p>实验中记录了空序列、长序列、样本筛选和执行超时等问题，并比较不同事件数量设置对结果的影响。项目用于离线分析与实验验证，仍受行为触发范围、样本规模和长序列建模能力限制。</p></div></details>
-            <ul class="project-tags" aria-label="毕业设计技术"><li>Python</li><li>Shell</li><li>Docker</li><li>Falco / strace</li><li>PyTorch / LSTM</li></ul>
+            <div class="project-stats-grid" aria-label="实验环境与特征配置">
+              <div class="project-stat-box">
+                <span class="project-stat-key">监测入口</span>
+                <strong class="project-stat-num">setup.py</strong>
+                <span class="project-stat-desc">安装期钩子行为</span>
+              </div>
+              <div class="project-stat-box">
+                <span class="project-stat-key">沙箱环境</span>
+                <strong class="project-stat-num">Docker</strong>
+                <span class="project-stat-desc">非特权隔离容器</span>
+              </div>
+              <div class="project-stat-box">
+                <span class="project-stat-key">特征维度</span>
+                <strong class="project-stat-num">707 维</strong>
+                <span class="project-stat-desc">事件类型与敏感路径</span>
+              </div>
+              <div class="project-stat-box">
+                <span class="project-stat-key">分类网络</span>
+                <strong class="project-stat-num">LSTM</strong>
+                <span class="project-stat-desc">64 隐层 · Dropout 0.2</span>
+              </div>
+            </div>
+            <div class="project-takeaway">
+              <span class="project-takeaway-label">💡 动态行为检测的抗混淆思考</span>
+              <p>传统静态分析极易被 Base64 编码、代码混淆或动态字符串拼装绕过。在容器隔离沙箱中监控真实的系统调用（如网络反弹 Shell、读写敏感目录 <code>~/.ssh</code> / <code>/etc/passwd</code>），能从更底层捕获攻击本质。但实验也表明，单纯依赖动态难以识别延迟休眠（Sleep）对抗或环境探测型恶意代码，动态与静态互补是未来更成熟的方向。</p>
+            </div>
+            <ul class="project-tags" aria-label="毕业设计技术">
+              <li>Python</li>
+              <li>PyTorch / LSTM</li>
+              <li>Docker 容器隔离</li>
+              <li>Falco</li>
+              <li>strace 进程跟踪</li>
+              <li>Shell / Linux</li>
+              <li>动态对抗混淆</li>
+            </ul>
           </article>
           <article class="project-card" aria-labelledby="csp-title">
             <div class="project-kicker"><span>算法练习</span><span aria-hidden="true">↗</span></div>
             <h3 id="csp-title">CSP / C 语言刷题记录</h3>
             <p class="project-description">备考 CSP 时建立的刷题记录仓库，用 C 语言练习 CSP 与 LeetCode 题目，整理代码、样例和解题复盘，方便回看练习过程。</p>
-            <a class="project-note-link" href="./notes/rotting-oranges.html"><span class="project-note-label">实践笔记 001</span><span>腐烂的橘子：一分钟，BFS 的一层 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/largest-rectangle.html"><span class="project-note-label">实践笔记 002</span><span>柱状图中最大的矩形：单调栈与边界跨度 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/range-sum-mutable.html"><span class="project-note-label">实践笔记 003</span><span>树状数组：lowbit 的向前求和与向后更新 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/course-schedule.html"><span class="project-note-label">实践笔记 004</span><span>课程表：为什么入度为 0 才是 BFS 拓扑排序的钥匙 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/coin-change.html"><span class="project-note-label">实践笔记 005</span><span>零钱兑换：为什么完全背包要正序遍历，dp 代表什么 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/longest-increasing-subsequence.html"><span class="project-note-label">实践笔记 006</span><span>最长递增子序列：dp 状态设计、初始化陷阱与全局最大值 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/longest-common-subsequence.html"><span class="project-note-label">实践笔记 007</span><span>最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/binary-search.html"><span class="project-note-label">实践笔记 008</span><span>二分查找：循环不变量、边界收缩与防溢出设计 <span aria-hidden="true">→</span></span></a>
             <a class="project-note-link" href="./notes/monte-carlo.html"><span class="project-note-label">实践笔记 009</span><span>蒙特卡洛：几何概率估计 π、平方比较与边界等于陷阱 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/index.html"><span class="project-note-label">全部归档</span><span>查看全部 9 篇算法实践笔记与分类索引 <span aria-hidden="true">→</span></span></a>
+            <a class="project-note-link" href="./notes/binary-search.html"><span class="project-note-label">实践笔记 008</span><span>二分查找：循环不变量、边界收缩与防溢出设计 <span aria-hidden="true">→</span></span></a>
+            <a class="project-note-link" href="./notes/longest-common-subsequence.html"><span class="project-note-label">实践笔记 007</span><span>最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径 <span aria-hidden="true">→</span></span></a>
+            <a class="project-note-link" href="./notes/longest-increasing-subsequence.html"><span class="project-note-label">实践笔记 006</span><span>最长递增子序列：dp 状态设计、初始化陷阱与全局最大值 <span aria-hidden="true">→</span></span></a>
+            <details class="project-notes-more">
+              <summary>展开更早的 5 篇实践复盘 (001 ~ 005) <span aria-hidden="true">+</span></summary>
+              <div>
+                <a class="project-note-link" href="./notes/coin-change.html"><span class="project-note-label">实践笔记 005</span><span>零钱兑换：为什么完全背包要正序遍历，dp 代表什么 <span aria-hidden="true">→</span></span></a>
+                <a class="project-note-link" href="./notes/course-schedule.html"><span class="project-note-label">实践笔记 004</span><span>课程表：为什么入度为 0 才是 BFS 拓扑排序的钥匙 <span aria-hidden="true">→</span></span></a>
+                <a class="project-note-link" href="./notes/range-sum-mutable.html"><span class="project-note-label">实践笔记 003</span><span>树状数组：lowbit 的向前求和与向后更新 <span aria-hidden="true">→</span></span></a>
+                <a class="project-note-link" href="./notes/largest-rectangle.html"><span class="project-note-label">实践笔记 002</span><span>柱状图中最大的矩形：单调栈与边界跨度 <span aria-hidden="true">→</span></span></a>
+                <a class="project-note-link" href="./notes/rotting-oranges.html"><span class="project-note-label">实践笔记 001</span><span>腐烂的橘子：一分钟，BFS 的一层 <span aria-hidden="true">→</span></span></a>
+              </div>
+            </details>
+            <a class="project-note-link project-note-all" href="./notes/index.html"><span class="project-note-label">全部归档</span><span>查看全部 9 篇算法实践笔记与分类索引 <span aria-hidden="true">→</span></span></a>
             <a class="project-link" href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 <span aria-hidden="true">↗</span></a>
           </article>
           <article class="project-card project-recent" aria-labelledby="minecraft-title">
-            <div class="project-kicker"><span>最近在玩</span><span>RECENT</span></div>
-            <h3 id="minecraft-title">Minecraft 生电生存</h3>
-            <p class="project-description">最近租用了一台 VPS，用于 Minecraft 生电生存。</p>
+            <div class="project-recent-info">
+              <div class="project-kicker"><span>最近在玩</span><span>RECENT</span></div>
+              <h3 id="minecraft-title">Minecraft 生电生存</h3>
+              <p class="project-description">最近租用了一台 VPS，用于 Minecraft 生电生存。</p>
+            </div>
+            <div class="project-recent-badge">
+              <span class="status-dot"></span> 长期服运行中
+            </div>
           </article>
         </div>
       </section>
