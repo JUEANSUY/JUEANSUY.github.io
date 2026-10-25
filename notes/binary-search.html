@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 704 二分查找：闭区间 [left, right] 的循环不变量、left + (right - left) / 2 防整型溢出写法，以及为什么移动边界必须跳过 mid 防范死循环。附双指针动态折半演示与 C 语言源码。">
+  <meta name="theme-color" content="#101615">
+  <title>二分查找：循环不变量、防溢出中点与边界跨越 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="manifest" href="../site.webmanifest">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="二分查找：循环不变量、防溢出中点与边界跨越 · Jueansuy">
+  <meta property="og:description" content="复盘 LeetCode 704 二分查找：闭区间 [left, right] 的循环不变量、left + (right - left) / 2 防整型溢出写法，以及为什么移动边界必须跳过 mid 防范死循环。附双指针动态折半演示与 C 语言源码。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/binary-search.html">
+  <meta name="twitter:card" content="summary">
+  <script type="module" src="../note-common.mjs"></script>
+  <script type="module" src="../bs-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="./index.html"><span aria-hidden="true">←</span> 回到实践笔记归档</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 008</div>
+        <h1>二分查找：<br>循环不变量、防溢出中点与<span class="mint">边界跨越</span></h1>
+        <p class="article-deck">“思路很简单，细节是魔鬼。”这是计算机科学先驱高德纳（Donald Knuth）谈到二分查找时的经典感叹（LeetCode 704）。几乎所有二分查找写错的死循环与边界越界，都根源于对区间开闭与“循环不变量”的理解不严密：为什么选闭区间 [left, right]？为什么循环条件必须是 left &lt;= right？为什么不能写 (left + right) / 2？</p>
+        <div class="article-meta"><span>C 语言</span><span>二分查找 / 双指针</span><span>LeetCode 704 · 基础</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="二分查找算法复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE LOOP INVARIANT</span>
+            <h2 id="problem-title">区间开闭决定一切：何为“循环不变量”？</h2>
+            <p>给定一个升序整型数组 <code>nums</code> 和一个目标值 <code>target</code>。写一个函数搜索 <code>nums</code> 中的 <code>target</code>，如果目标值存在返回下标，否则返回 <code>-1</code>。</p>
+            <p>写二分查找的第一步，永远不是敲 <code>while</code>，而是<strong>在心中定义好你的查找区间类型</strong>。定义一旦确定，后续每一步的代码都必须严格维护这个定义（即“循环不变量”）：</p>
+            <div class="article-insight">
+              <strong>双闭区间 [left, right] 约定：</strong>
+              <ul>
+                <li><strong>区间初始</strong>：<code>left = 0, right = numsSize - 1</code>，两端均指向有效可访问的数组元素；</li>
+                <li><strong>循环终止</strong>：当 <code>left == right</code> 时，区间 <code>[left, left]</code> 依然包含 1 个尚未核验的候选数字！因此循环条件必须是 <code>while (left &lt;= right)</code>，只有当 <code>left &gt; right</code> 区间为空时才算彻底搜空；</li>
+                <li><strong>边界推进</strong>：当中点 <code>nums[mid] != target</code> 时，已知 <code>mid</code> 绝对不是答案，必须严格将边界推进一位：<code>left = mid + 1</code> 或 <code>right = mid - 1</code>，彻底将 <code>mid</code> 排除出下一轮区间，避免死循环！</li>
+              </ul>
+            </div>
+          </section>
+
+          <section id="bs-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">双指针夹逼推演，观察搜索空间折半。</h2>
+            <p>推演中观察 <code>L</code>（左界）、<code>R</code>（右界）与 <code>M</code>（探针中点）。每一步比对后，被排除的半边数组将被置为半透明灰阶，展现搜索规模以几何级数对数骤减的过程。</p>
+            <div class="bs-demo-panel">
+              <div class="bs-demo-heading">
+                <span>双闭区间二分推演 · 步进演示</span>
+                <span>不变量: target ∈ [left, right]（若 target 存在）</span>
+              </div>
+              <div class="bs-stage">
+                <div class="bs-visuals">
+                  <div class="bs-row">
+                    <span class="bs-row-label">有序数组单元格（高亮绿: 有效候选，金黄框: 当前中点 mid，灰阶: 已排除）</span>
+                    <div id="bs-grid" class="bs-grid" role="group" aria-label="二分查找数组条带"></div>
+                  </div>
+                  <ul class="bs-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-active"></span> 当前候选区间 [L, R]</li>
+                    <li><span class="legend-swatch swatch-mid"></span> 当前中点 M (mid)</li>
+                    <li><span class="legend-swatch swatch-excluded"></span> 已排除区域</li>
+                  </ul>
+                </div>
+                <div class="bs-readout">
+                  <div class="bs-metrics">
+                    <div><span>左边界 left</span><p><strong id="bs-left">0</strong></p></div>
+                    <div><span>右边界 right</span><p><strong id="bs-right">5</strong></p></div>
+                    <div><span>中点 mid</span><p><strong id="bs-mid">—</strong></p></div>
+                    <div><span>推演步数</span><p><strong id="bs-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="bs-status" role="status" aria-live="polite" aria-atomic="true">初始化闭区间 [left, right]。</p>
+                  <p class="bs-reading-hint">每次比对必将 mid 排除出下一轮范围，严格保证区间单调收缩。</p>
+                </div>
+              </div>
+              <div id="bs-controls" class="bs-controls" hidden>
+                <div class="bs-scenario-field">
+                  <label for="bs-scenario">选择推演用例</label>
+                  <select id="bs-scenario">
+                    <option value="found_middle">经典命中 [-1, 0, 3, 5, 9, 12] 查找 9 · 返回下标 4</option>
+                    <option value="found_left_edge">左边界查找 -1 · 返回下标 0</option>
+                    <option value="found_right_edge">右边界查找 12 · 返回下标 5</option>
+                    <option value="missing_between">中间缺失查找 2 · 交叉收缩返回 -1</option>
+                    <option value="missing_too_small">过小元素查找 -10 · 左侧越界返回 -1</option>
+                    <option value="single_element_found">单元素数组 [5] 查找 5 · 返回 0</option>
+                    <option value="single_element_missing">单元素数组 [5] 查找 0 · 返回 -1</option>
+                  </select>
+                </div>
+                <div class="bs-step-buttons">
+                  <button id="bs-prev" type="button">← 上一步</button>
+                  <button id="bs-next" type="button">下一步 →</button>
+                  <button id="bs-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="bs-noscript">步进演示需要 JavaScript。下方保留了完整推导过程与 C 语言核心实现。</p></noscript>
+            </div>
+          </section>
+
+          <section id="bs-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE CRITICAL DECISIONS</span>
+            <h2 id="decisions-title">三个关键细节：防整型溢出、循环条件与边界步进</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>为什么不能写 <code>(left + right) / 2</code>？</h3><p>在 C/C++ 等强类型语言中，<code>int</code> 通常为 32 位带符号整数（上限约 $2.14 \times 10^9$）。当 <code>left</code> 和 <code>right</code> 都很大（例如在海量数据检索或二分答案时），两数相加 <code>left + right</code> 会直接<strong>整型溢出翻转为负数</strong>，导致 <code>mid</code> 成为负数并引发内存段错误！必须写成 <code>left + (right - left) / 2</code>，先减后加，数学等价且在数学上永远不会发生上溢。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>为什么闭区间必须是 <code>left &lt;= right</code>？</h3><p>如果是左闭右开 <code>[left, right)</code>，那么当 <code>left == right</code> 时区间 <code>[left, left)</code> 为空，条件应该写 <code>left &lt; right</code>。但如果使用的是双闭区间 <code>[left, right]</code>，当 <code>left == right</code> 时，<strong>该位置上的元素还没有被核验过</strong>！例如单元素数组 <code>[5]</code> 找 <code>5</code>，初始 <code>left = 0, right = 0</code>。如果误写为 <code>left &lt; right</code>，循环根本不会进入，直接错误返回 <code>-1</code>。因此双闭区间必须写 <code>&lt;=</code>。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>必须加一减一：<code>left = mid + 1</code> 与 <code>right = mid - 1</code></h3><p>许多初学者偷懒写 <code>left = mid</code> 或 <code>right = mid</code>。由于整数除法是向下取整，当区间只剩两个元素时（例如 <code>left = 0, right = 1</code>），<code>mid = 0 + 0 / 2 = 0</code>。若此时 <code>nums[0] &lt; target</code> 且你执行 <code>left = mid</code>，<code>left</code> 依然为 0！区间范围完全没有缩小，程序陷入<strong>无限死循环</strong>。既然 <code>nums[mid]</code> 已经确认不是 <code>target</code>，必须坚决将其移出下一轮考察范围。</p></div></li>
+            </ol>
+          </section>
+
+          <section class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / THE C IMPLEMENTATION</span>
+            <h2 id="code-title">真实 C 语言实现节选</h2>
+            <p>选自 CSP 练习记录中已通过评测的源码。纯粹的逻辑，严格的防溢出与边界控制。</p>
+            <div class="article-code-panel">
+              <div class="article-code-caption">
+                <span>001-lc704-binary-search / main.c</span>
+                <a href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 ↗</a>
+              </div>
+              <pre><code>int search(int *nums, int numsSize, int target) {
+    int left = 0;
+    int right = numsSize - 1; // 1. 采用双闭区间 [left, right]
+    int mid;
+
+    while (left &lt;= right) {   // 2. 当 left == right 时区间依然有效
+        mid = left + (right - left) / 2; // 3. 防整型加法溢出写法
+        if (nums[mid] == target) {
+            return mid;
+        } else if (nums[mid] &lt; target) {
+            left = mid + 1;   // 4. 严格跳过 mid，防止死循环
+        } else {
+            right = mid - 1;  // 4. 严格跳过 mid，防止死循环
+        }
+    }
+    return -1; // 搜索区间为空，目标不存在
+}</code></pre>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">05 / LOGARITHMIC POWER</span>
+            <h2 id="complexity-title">对数复杂度的威力与极限</h2>
+            <div class="article-complexity">
+              <div>
+                <span>时间复杂度</span>
+                <strong>O(log N)</strong>
+                <p>N 为数组长度。每次比对直接斩去一半候选元素。即便面对 40 亿（$4 \times 10^9$）个有序数字，二分查找最多只需约 32 次比较即可精准定夺！</p>
+              </div>
+              <div>
+                <span>空间复杂度</span>
+                <strong>O(1)</strong>
+                <p>仅需常数级别的指针与临时变量（<code>left, right, mid</code>），无需任何额外辅助数组或递归调用栈，内存开销极小。</p>
+              </div>
+            </div>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./longest-common-subsequence.html"><span class="nav-dir">← 上一篇实践笔记</span><span>007 最长公共子序列与二维 DP</span></a>
+            <a class="nav-next" href="./monte-carlo.html"><span class="nav-dir">下一篇实践笔记 →</span><span>009 蒙特卡洛与几何概率</span></a>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="本篇目录">
+          <span class="section-index">CONTENTS</span>
+          <nav>
+            <a href="#problem-title">01 循环不变量概念</a>
+            <a href="#demo-title">02 双指针推演演示</a>
+            <a href="#decisions-title">03 三个致命细节</a>
+            <a href="#code-title">04 C 语言实现节选</a>
+            <a href="#complexity-title">05 对数阶复杂度</a>
+          </nav>
+          <p>看似简单的二分查找，是检验程序员“思维严密性”的显微镜。搞懂开闭区间与不变量，不仅能轻松写出二分，更能轻松应对二分答案、旋转排序数组与寻找峰值等全部变种。</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践笔记 008</span>
+      <a href="#article-top">回到顶部 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 CSP 202509 第一题《蒙特卡洛》：几何概率采样估计圆周率 π、为什么必须用平方比较规避 sqrt 浮点性能与精度开销、勾股数 (3, 4) 边界必须包含的等于陷阱，以及 C 语言浮点除法截断细节。附实时 Canvas 几何概率采样演示与 C 语言源码。">
+  <meta name="theme-color" content="#101615">
+  <title>蒙特卡洛：几何概率估计 π、平方比较与边界等于陷阱 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="manifest" href="../site.webmanifest">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="蒙特卡洛：几何概率估计 π、平方比较与边界等于陷阱 · Jueansuy">
+  <meta property="og:description" content="复盘 CSP 202509 第一题《蒙特卡洛》：几何概率采样估计圆周率 π、为什么必须用平方比较规避 sqrt 浮点性能与精度开销、勾股数 (3, 4) 边界必须包含的等于陷阱，以及 C 语言浮点除法截断细节。附实时 Canvas 几何概率采样演示与 C 语言源码。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/monte-carlo.html">
+  <meta name="twitter:card" content="summary">
+  <script type="module" src="../note-common.mjs"></script>
+  <script type="module" src="../monte-carlo-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="./index.html"><span aria-hidden="true">←</span> 回到实践笔记归档</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 009</div>
+        <h1>蒙特卡洛：<br>几何概率估计 π、平方比较与<span class="mint">边界等于陷阱</span></h1>
+        <p class="article-deck">复盘 CSP 202509 认证第一题《蒙特卡洛》（OJ 满分 100 分）。作为 CSP 考试中非常考查“数学直觉与工程严谨性”的几何模拟题，题目虽然只有不到 20 行核心逻辑，却潜藏着三大经典考场陷阱：为什么不能直接调用 sqrt()？为什么边界点必须用 &lt;= 而不是 &lt;？C 语言中的整除截断又是如何无声吞掉精度的？</p>
+        <div class="article-meta"><span>C 语言</span><span>几何模拟 / 蒙特卡洛</span><span>CSP 202509A · 满分 100</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="蒙特卡洛算法复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / GEOMETRIC PROBABILITY</span>
+            <h2 id="problem-title">几何概率模型：为什么撒点能算出 π？</h2>
+            <p>题目描述：在第一象限以原点 $(0, 0)$ 为左下角、边长为 $a$ 的正方形区域内，随机撒下 $n$ 个点 $(x, y)$。圆心在原点、半径为 $a$ 的圆与该正方形的交集恰好是<strong>四分之一圆</strong>。统计落在圆内的点数 $cnt$，通过面积比估计圆周率 $\pi$：</p>
+            <div class="article-insight">
+              <strong>大数定律与面积比推导：</strong>
+              <ul>
+                <li><strong>正方形区域面积</strong>：$S_{\text{square}} = a \times a = a^2$；</li>
+                <li><strong>四分之一圆区域面积</strong>：$S_{\text{quarter}} = \frac{1}{4} \pi a^2$；</li>
+                <li><strong>几何概率比例</strong>：当撒点足够密集且均匀分布时，落入四分之一圆内的概率等于面积之比：
+                  $$\frac{cnt}{n} \approx \frac{S_{\text{quarter}}}{S_{\text{square}}} = \frac{\frac{1}{4} \pi a^2}{a^2} = \frac{\pi}{4}$$
+                </li>
+                <li><strong>圆周率反解公式</strong>：两边同乘 4，即可得出估算值：$$\pi \approx 4 \times \frac{cnt}{n}$$</li>
+              </ul>
+            </div>
+            <p>这个思想就是著名的<strong>蒙特卡洛方法（Monte Carlo Method）</strong>——用计算机海量伪随机抽样来逼近确定性数学解。在现代计算机图形学渲染（光线追踪）、物理粒子碰撞模拟与金融期权定价中，蒙特卡洛都是不可或缺的底层基石。</p>
+          </section>
+
+          <section class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / INTERACTIVE SIMULATION</span>
+            <h2 id="demo-title">蒙特卡洛采样与收敛动态演练</h2>
+            <p>下方的交互画布实时模拟第一象限 $[0, a] \times [0, a]$ 的随机撒点过程。绿色为圆内点，红色为圆外点，青色弧线为边界 $x^2 + y^2 = a^2$。你可以切换不同样本量，或者手动批量撒点，亲眼见证估算值如何随着样本量增加一步步收敛到 $3.1416$：</p>
+
+            <div class="article-demo-box">
+              <div class="mc-demo-heading">
+                <span>MONTE CARLO SIMULATOR · FIRST QUADRANT</span>
+                <span>纯浏览器本地 Canvas 渲染 · 零依赖</span>
+              </div>
+              <div id="monte-carlo-simulator"></div>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE TRAPS IN EXAM</span>
+            <h2 id="decisions-title">考场三大致命陷阱：平方比较、边界等于与整除截断</h2>
+            <p>这道题在考场上看似简单，但通过率却远没有想象中高。以下是复盘中总结出的三大极易丢分的工程陷阱：</p>
+
+            <div class="article-decision-card">
+              <div class="decision-kicker">陷阱 01 / 性能与精度</div>
+              <h3>为什么绝不能用 <code>sqrt()</code> 开方求欧氏距离？</h3>
+              <p>很多考生的第一直觉是计算点到原点的距离：<code>double dist = sqrt(x * x + y * y); if (dist &lt;= a) ...</code>。这在工程上有两大隐患：</p>
+              <ul>
+                <li><strong>指令开销巨大</strong>：浮点数开方 <code>sqrt()</code> 是 CPU 中计算开销极大的操作，需要数十甚至上百个时钟周期。当 $n$ 达到 $10^5$ 时，频繁调用 <code>sqrt()</code> 很容易超时（TLE）；</li>
+                <li><strong>浮点精度漂移</strong>：浮点开方会引入精度舍入误差。对于原本恰好在圆上的边界点，开方可能因为微小扰动算出 <code>5.000000000000001</code>，导致误判！</li>
+              </ul>
+              <p><strong>标准解法</strong>：两边平方，直接比较：<code>x * x + y * y &lt;= (double)a * a</code>。不仅只用加法和乘法（极快），而且完全避开了开方精度损失！</p>
+            </div>
+
+            <div class="article-decision-card">
+              <div class="decision-kicker">陷阱 02 / 边界严格等于</div>
+              <h3>勾股数 (3, 4, 5) 边界点为什么必须用 <code>&lt;=</code>？</h3>
+              <p>题目明确说明：<strong>“圆内包含边界”</strong>。如果考场上顺手写成了 <code>&lt; a * a</code>：</p>
+              <p>当半径 $a = 5$，测试数据中出现经典勾股数 $(3, 4)$ 时，$3^2 + 4^2 = 25 = 5^2$。如果代码是 <code>&lt;</code>，这个点将被判为圆外，导致计数 $cnt$ 少算 1，整个测试点全错！</p>
+              <p>无论是几何几何题还是数组二分题，“等号是否包含”永远是决定 0 分还是 100 分的生死线。</p>
+            </div>
+
+            <div class="article-decision-card">
+              <div class="decision-kicker">陷阱 03 / C 语言整除截断</div>
+              <h3><code>4 * cnt / n</code> 为什么算出了 0 或者 3？</h3>
+              <p>在 C 语言中，如果把计数器 <code>cnt</code> 声明为普通整型 <code>int cnt = 0;</code>，那么表达式 <code>4 * cnt / n</code> 是纯整数运算！</p>
+              <p>例如采样 100 个点，圆内 78 个点：<code>4 * 78 / 100 = 312 / 100 = 3</code>，小数部分被强制截断，精度全失；如果先算 <code>cnt / n</code> 甚至会直接得到 <code>0</code>！</p>
+              <p><strong>避坑策略</strong>：直接将 <code>cnt</code> 声明为 <code>double cnt = 0;</code>，或者在乘法中引入浮点字面量 <code>4.0 * cnt / n</code>，强制整个运算链提升为双精度浮点计算。</p>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / C CODE IMPLEMENTATION</span>
+            <h2 id="code-title">CSP 认证 100 分满分 C 语言代码节选</h2>
+            <div class="article-code-block">
+              <div class="code-block-header">
+                <span class="code-lang">C (C99 / GCC)</span>
+                <button type="button" class="code-copy-btn" aria-label="复制代码">复制代码</button>
+              </div>
+              <pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int n, a;
+    // 读取采样点数 n 和正方形边长/半径 a
+    if (scanf("%d %d", &n, &a) != 2) {
+        return 0;
+    }
+
+    double x, y;
+    // cnt 声明为 double，直接规避后续整除截断陷阱
+    double cnt = 0;
+
+    for (int i = 0; i < n; i++) {
+        scanf("%lf %lf", &x, &y);
+        // 核心：直接比较平方，避开 sqrt 浮点指令开销与精度漂移
+        // 核心：必须使用 <= 包含圆弧边界点（如 3-4-5 勾股点）
+        if (x * x + y * y <= (double)a * a) {
+            cnt++;
+        }
+    }
+
+    // 4.0 保证全精度双精度浮点运算：π ≈ 4 * (cnt / n)
+    double p = 4.0 * cnt / n;
+    printf("%lf\n", p);
+
+    return 0;
+}</code></pre>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">05 / COMPLEXITY & CONVERGENCE</span>
+            <h2 id="complexity-title">复杂度与大数定律收敛速率</h2>
+            <div class="article-complexity">
+              <div>
+                <span>时间复杂度</span>
+                <strong>O(N)</strong>
+                <p>N 为采样点数。单重循环流式处理输入点，无数组存储开销，每个点仅做 2 次乘法、1 次加法与 1 次常数比较，计算量极小，轻松在 100ms 内跑完十万级采样。</p>
+              </div>
+              <div>
+                <span>空间复杂度与收敛率</span>
+                <strong>O(1) · 误差 O(1 / √N)</strong>
+                <p>只使用标量变量，空间占用 $O(1)$。根据中心极限定理，蒙特卡洛采样的标准差为 $O(1 / \sqrt{N})$，样本量每扩大 100 倍，估计值有效数字增加 1 位。</p>
+              </div>
+            </div>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./binary-search.html"><span class="nav-dir">← 上一篇实践笔记</span><span>008 二分查找与循环不变量</span></a>
+            <a class="nav-next" href="./index.html"><span class="nav-dir">全部实践笔记 →</span><span>返回归档索引</span></a>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="本篇目录">
+          <span class="section-index">CONTENTS</span>
+          <nav>
+            <a href="#problem-title">01 几何概率模型</a>
+            <a href="#demo-title">02 采样动态演练</a>
+            <a href="#decisions-title">03 考场三大陷阱</a>
+            <a href="#code-title">04 C 语言实现节选</a>
+            <a href="#complexity-title">05 复杂度与收敛率</a>
+          </nav>
+          <p>蒙特卡洛是连接离散概率与连续微积分的魔法桥梁。掌握平方比较规避开方、严格等于包含边界，不仅能在 CSP 认证中斩获满分，更能将这套严谨的数值计算直觉带入未来更复杂的图形学与算法研发中。</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践笔记 009</span>
+      <a href="#article-top">回到顶部 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

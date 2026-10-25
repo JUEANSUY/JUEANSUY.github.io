@@ -75,6 +75,23 @@ export function initArchive(doc = document, win = typeof window !== 'undefined' 
       currentKeyword = e.target.value;
       update();
     });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        currentKeyword = '';
+        update();
+        searchInput.blur();
+      }
+    });
+
+    doc.addEventListener('keydown', (e) => {
+      if (e.key === '/' && doc.activeElement !== searchInput && !['INPUT', 'TEXTAREA'].includes(doc.activeElement?.tagName)) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    });
   }
 
   update();

@@ -40,17 +40,49 @@
       <section class="archive-section" aria-label="算法实践笔记列表">
         <div class="archive-toolbar" role="search" aria-label="实践笔记筛选与搜索">
           <div class="archive-filters" role="group" aria-label="笔记分类筛选">
-            <button type="button" class="archive-filter-btn" data-category="all" data-active="true" aria-pressed="true">全部 (7)</button>
+            <button type="button" class="archive-filter-btn" data-category="all" data-active="true" aria-pressed="true">全部 (9)</button>
             <button type="button" class="archive-filter-btn" data-category="dp" data-active="false" aria-pressed="false">动态规划 (3)</button>
             <button type="button" class="archive-filter-btn" data-category="graph" data-active="false" aria-pressed="false">图论与搜索 (2)</button>
-            <button type="button" class="archive-filter-btn" data-category="datastruct" data-active="false" aria-pressed="false">数据结构与栈 (2)</button>
+            <button type="button" class="archive-filter-btn" data-category="datastruct" data-active="false" aria-pressed="false">基础与数据结构 (4)</button>
           </div>
           <div class="archive-search">
-            <input id="archive-search-input" type="search" placeholder="搜索题号、关键词、算法类型..." aria-label="搜索实践笔记">
+            <input id="archive-search-input" type="search" placeholder="搜索题号、关键词、算法类型... (按 / 聚焦)" aria-label="搜索实践笔记">
           </div>
         </div>
 
         <div class="archive-grid">
+
+          <article class="archive-card" data-category="datastruct" aria-labelledby="note-009-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 009</span>
+              <span class="archive-card-tag">CSP 认证 · 几何概率</span>
+            </div>
+            <h2 id="note-009-title"><a href="./monte-carlo.html">蒙特卡洛：几何概率估计 π、平方比较与边界等于陷阱</a></h2>
+            <p class="archive-card-desc">复盘 CSP 202509 第一题《蒙特卡洛》（OJ 满分 100 分）。大数定律与面积比推导、为什么必须比较平方规避 sqrt 浮点性能与精度开销、勾股数 (3, 4) 边界包含等于陷阱，以及 C 语言整除截断排错。</p>
+            <div class="archive-card-meta">
+              <span>CSP 202509A · 满分 100</span>
+              <span>实时 Canvas 几何概率采样演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./monte-carlo.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" data-category="datastruct" aria-labelledby="note-008-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 008</span>
+              <span class="archive-card-tag">二分查找 · 双指针</span>
+            </div>
+            <h2 id="note-008-title"><a href="./binary-search.html">二分查找：循环不变量、边界收缩与防溢出设计</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 704《二分查找》。闭区间 [left, right] 的严格不变量，为什么循环条件必须为 left &lt;= right，mid 防加法溢出写法，以及边界严格 +1/-1 收缩细节。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 704 · 基础</span>
+              <span>双指针与闭区间推演演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./binary-search.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
 
           <article class="archive-card" data-category="dp" aria-labelledby="note-007-title">
             <div class="archive-card-top">
