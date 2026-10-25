@@ -1,4 +1,4 @@
-import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify, timestampToDate, dateToTimestamp, textToHex, hexToText } from './toolkit.mjs';
+import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify, timestampToDate, dateToTimestamp, textToHex, hexToText, jwtDecode, generateUuid, generateRandomToken } from './toolkit.mjs';
 
 const $ = (id) => document.getElementById(id);
 const input = $('tool-input');
@@ -38,6 +38,16 @@ const tools = {
     sample: '你好，世界！',
     hint: 'UTF-8 文本与十六进制（Hex）字节序列互转。解码支持空格、冒号分隔或连续 Hex，纯本地计算。',
   },
+  jwt: {
+    title: '解析 JWT', format: 'Header 与 Payload 明文',
+    sample: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6Ikp1ZWFuc3V5Iiwicm9sZSI6ImRldmVsb3BlciIsImV4cCI6MTgwMDAwMDAwMCwiaWF0IjoxNzAwMDAwMDAwfQ.insecure_sample_signature_demo',
+    hint: '纯前端本地解码 JSON Web Token 的 Header 与 Payload，解析过期时间与签发时间。本工具不上传 Token，亦不校验数字签名。',
+  },
+  uuid: {
+    title: '随机密钥生成', format: '随机字符 / UUID',
+    sample: '32',
+    hint: '使用 Web Crypto 加密安全随机源生成 RFC 4122 标准的 UUID v4 或指定长度的 Hex 密钥。纯本地运行。',
+  },
 };
 let selected = 'sha256';
 let mode = 'encode';
@@ -63,6 +73,8 @@ function setBusy(busy) {
     : selected === 'json' ? `${mode === 'encode' ? '格式化' : '压缩'} JSON`
     : selected === 'timestamp' ? `${mode === 'encode' ? '转北京时间' : '转时间戳'}`
     : selected === 'hex' ? `${mode === 'encode' ? '转十六进制' : '转文本'}`
+    : selected === 'jwt' ? '解析 JWT'
+    : selected === 'uuid' ? `${mode === 'encode' ? '生成 UUID v4' : '生成随机密钥'}`
     : `${mode === 'encode' ? '编码' : '解码'}文本`;
   runButton.replaceChildren(document.createTextNode(busy ? '处理中…' : label));
   if (!busy) {
@@ -86,7 +98,7 @@ function invalidate(message = '输入已更新，点击运行或按 Ctrl / ⌘ +
 }
 
 function configure() {
-  const isHash = selected === 'sha256';
+  const isSingle = selected === 'sha256' || selected === 'jwt';
   tabs.forEach((tab) => {
     const active = tab.dataset.tool === selected;
     tab.classList.toggle('active', active);
@@ -94,18 +106,19 @@ function configure() {
     tab.tabIndex = active ? 0 : -1;
   });
   $('tool-panel').setAttribute('aria-labelledby', `tab-${selected}`);
-  $('mode-controls').hidden = isHash;
-  swapButton.hidden = isHash;
+  $('mode-controls').hidden = isSingle;
+  swapButton.hidden = isSingle || selected === 'uuid';
   modes.forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
-    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : selected === 'timestamp' ? '转为日期' : selected === 'hex' ? '转 Hex' : '编码';
-    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : selected === 'timestamp' ? '转时间戳' : selected === 'hex' ? '转文本' : '解码';
+    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : selected === 'timestamp' ? '转为日期' : selected === 'hex' ? '转 Hex' : selected === 'uuid' ? 'UUID v4' : '编码';
+    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : selected === 'timestamp' ? '转时间戳' : selected === 'hex' ? '转文本' : selected === 'uuid' ? 'Hex 密钥' : '解码';
   });
   $('tool-hint').textContent = tools[selected].hint;
-  $('output-format').textContent = isHash ? tools[selected].format
+  $('output-format').textContent = isSingle ? tools[selected].format
     : selected === 'json' ? (mode === 'encode' ? '格式化 JSON' : '紧凑 JSON')
     : selected === 'timestamp' ? (mode === 'encode' ? '北京时间 / ISO' : 'Unix 时间戳')
     : selected === 'hex' ? (mode === 'encode' ? '十六进制字节 (Hex)' : 'UTF-8 文本')
+    : selected === 'uuid' ? (mode === 'encode' ? 'RFC 4122 UUID v4' : '随机 Hex 密钥')
     : selected === 'base64' && mode === 'encode' ? '标准 Base64'
     : selected === 'url' && mode === 'encode' ? 'URI 参数值'
     : 'UTF-8 文本';
@@ -129,7 +142,9 @@ async function run() {
       : selected === 'url' ? (mode === 'encode' ? urlEncode : urlDecode)
       : selected === 'json' ? (mode === 'encode' ? jsonFormat : jsonMinify)
       : selected === 'timestamp' ? (mode === 'encode' ? timestampToDate : dateToTimestamp)
-      : (mode === 'encode' ? textToHex : hexToText);
+      : selected === 'hex' ? (mode === 'encode' ? textToHex : hexToText)
+      : selected === 'jwt' ? jwtDecode
+      : (mode === 'encode' ? () => generateUuid() : (len) => generateRandomToken(parseInt(len, 10) || 32, 'hex'));
     const result = await fn(text);
     if (serial !== requestSerial) return;
     output.value = result;
@@ -142,6 +157,8 @@ async function run() {
       : selected === 'json' ? (mode === 'encode' ? '格式化完成' : '压缩完成')
       : selected === 'timestamp' ? '转换完成'
       : selected === 'hex' ? (mode === 'encode' ? '十六进制转换完成' : '文本解码完成')
+      : selected === 'jwt' ? 'JWT 解码完成'
+      : selected === 'uuid' ? '密钥生成完成'
       : mode === 'encode' ? '编码完成' : '解码完成';
     setStatus(`${verb} · ${result === '' ? '输出为空字符串' : '输入内容未上传'}`, 'success');
   } catch (error) {
@@ -168,6 +185,10 @@ function loadExample() {
     ? (mode === 'encode' ? '1792873887' : '2026-10-25 03:28:00')
     : selected === 'hex'
     ? (mode === 'decode' ? textToHex(sample) : sample)
+    : selected === 'jwt'
+    ? sample
+    : selected === 'uuid'
+    ? (mode === 'encode' ? '1' : '32')
     : mode === 'decode'
     ? (selected === 'base64' ? base64Encode(sample) : urlEncode(sample))
     : sample;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Jueansuy 的个人小站：记录学习，做一点有用的东西。SHA-256、Base64、URL 编解码、JSON 格式化与 Unix 时间戳转换均在浏览器本地完成。">
+  <meta name="description" content="Jueansuy 的个人小站：记录学习，做一点有用的东西。SHA-256、Base64、URL、JSON、时间戳、Hex 编解码与 JWT 解析均在浏览器本地完成。">
   <meta name="theme-color" content="#101615">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Jueansuy · 保持好奇，继续动手">
@@ -13,6 +13,7 @@
   <meta name="twitter:card" content="summary">
   <title>Jueansuy · 保持好奇，继续动手</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="manifest" href="./site.webmanifest">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="./app.js"></script>
 </head>
@@ -55,6 +56,8 @@
               <button type="button" class="tool-tab" id="tab-json" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="json"><span aria-hidden="true">&lt;&gt;</span> JSON 格式化</button>
               <button type="button" class="tool-tab" id="tab-timestamp" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="timestamp"><span aria-hidden="true">⏱</span> 时间戳</button>
               <button type="button" class="tool-tab" id="tab-hex" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="hex"><span aria-hidden="true">0x</span> Hex 编解码</button>
+              <button type="button" class="tool-tab" id="tab-jwt" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="jwt"><span aria-hidden="true">🔑</span> JWT 解析</button>
+              <button type="button" class="tool-tab" id="tab-uuid" role="tab" aria-selected="false" aria-controls="tool-panel" tabindex="-1" data-tool="uuid"><span aria-hidden="true">⚡</span> 随机与 UUID</button>
             </div>
             <span class="local-badge"><span aria-hidden="true">◈</span> BROWSER ONLY</span>
           </div>
@@ -104,7 +107,8 @@
             <a class="project-note-link" href="./notes/course-schedule.html"><span class="project-note-label">实践笔记 004</span><span>课程表：为什么入度为 0 才是 BFS 拓扑排序的钥匙 <span aria-hidden="true">→</span></span></a>
             <a class="project-note-link" href="./notes/coin-change.html"><span class="project-note-label">实践笔记 005</span><span>零钱兑换：为什么完全背包要正序遍历，dp 代表什么 <span aria-hidden="true">→</span></span></a>
             <a class="project-note-link" href="./notes/longest-increasing-subsequence.html"><span class="project-note-label">实践笔记 006</span><span>最长递增子序列：dp 状态设计、初始化陷阱与全局最大值 <span aria-hidden="true">→</span></span></a>
-            <a class="project-note-link" href="./notes/index.html"><span class="project-note-label">全部归档</span><span>查看全部 6 篇算法实践笔记与分类索引 <span aria-hidden="true">→</span></span></a>
+            <a class="project-note-link" href="./notes/longest-common-subsequence.html"><span class="project-note-label">实践笔记 007</span><span>最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径 <span aria-hidden="true">→</span></span></a>
+            <a class="project-note-link" href="./notes/index.html"><span class="project-note-label">全部归档</span><span>查看全部 7 篇算法实践笔记与分类索引 <span aria-hidden="true">→</span></span></a>
             <a class="project-link" href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 <span aria-hidden="true">↗</span></a>
           </article>
           <article class="project-card project-recent" aria-labelledby="minecraft-title">

@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#101615">
   <title>实践笔记归档 · 算法复盘与交互演示 · Jueansuy</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="manifest" href="../site.webmanifest">
   <link rel="stylesheet" href="../style.css">
   <meta property="og:type" content="website">
   <meta property="og:title" content="实践笔记归档 · 算法复盘与交互演示 · Jueansuy">
@@ -32,15 +33,15 @@
           <span>纯静态零依赖</span>
           <span>C 语言实现</span>
           <span>浏览器交互演练</span>
-          <span>共 6 篇归档</span>
+          <span>共 7 篇归档</span>
         </div>
       </header>
 
       <section class="archive-section" aria-label="算法实践笔记列表">
         <div class="archive-toolbar" role="search" aria-label="实践笔记筛选与搜索">
           <div class="archive-filters" role="group" aria-label="笔记分类筛选">
-            <button type="button" class="archive-filter-btn" data-category="all" data-active="true" aria-pressed="true">全部 (6)</button>
-            <button type="button" class="archive-filter-btn" data-category="dp" data-active="false" aria-pressed="false">动态规划 (2)</button>
+            <button type="button" class="archive-filter-btn" data-category="all" data-active="true" aria-pressed="true">全部 (7)</button>
+            <button type="button" class="archive-filter-btn" data-category="dp" data-active="false" aria-pressed="false">动态规划 (3)</button>
             <button type="button" class="archive-filter-btn" data-category="graph" data-active="false" aria-pressed="false">图论与搜索 (2)</button>
             <button type="button" class="archive-filter-btn" data-category="datastruct" data-active="false" aria-pressed="false">数据结构与栈 (2)</button>
           </div>
@@ -50,6 +51,22 @@
         </div>
 
         <div class="archive-grid">
+
+          <article class="archive-card" data-category="dp" aria-labelledby="note-007-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 007</span>
+              <span class="archive-card-tag">二维动态规划 · 双序列</span>
+            </div>
+            <h2 id="note-007-title"><a href="./longest-common-subsequence.html">最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 1143《最长公共子序列》。前缀状态对角线转移、C 语言大数组加 static 规避栈溢出崩溃、下标偏移约定与网格反向回溯重构真实子序列。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 1143 · 中等</span>
+              <span>二维表格填表步进演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./longest-common-subsequence.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
 
           <article class="archive-card" data-category="dp" aria-labelledby="note-006-title">
             <div class="archive-card-top">

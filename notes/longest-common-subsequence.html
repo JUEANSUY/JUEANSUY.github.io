@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 1143 最长公共子序列：二维动态规划网格推演，为什么大数组必须加 static 规避栈溢出，字符与 dp 下标的偏移细节，以及如何从网格中反向回溯得到真实子序列。附交互步进演示与 C 语言源码节选。">
+  <meta name="theme-color" content="#101615">
+  <title>最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="最长公共子序列：二维网格状态设计、栈溢出陷阱与回溯路径 · Jueansuy">
+  <meta property="og:description" content="复盘 LeetCode 1143 最长公共子序列：二维动态规划网格推演，为什么大数组必须加 static 规避栈溢出，字符与 dp 下标的偏移细节，以及如何从网格中反向回溯得到真实子序列。附交互步进演示与 C 语言源码节选。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/longest-common-subsequence.html">
+  <meta name="twitter:card" content="summary">
+  <script type="module" src="../note-common.mjs"></script>
+  <script type="module" src="../lcs-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="./index.html"><span aria-hidden="true">←</span> 回到实践笔记归档</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 007</div>
+        <h1>最长公共子序列：<br>二维网格状态设计、栈溢出陷阱与<span class="mint">回溯路径</span></h1>
+        <p class="article-deck">这是动态规划中极其经典的双序列（2D Grid）模型（LeetCode 1143）。从一维子序列拓展到双字符串比对，核心在于理解前缀状态的无后效性；同时在 C 语言实现中避开局部大数组栈溢出、处理“前 i 个字符”与下标 i - 1 的对应关系，并利用填好的 DP 表反向回溯还原出真正的公共子序列。</p>
+        <div class="article-meta"><span>C 语言</span><span>二维动态规划 / 双序列</span><span>LeetCode 1143 · 中等</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="最长公共子序列与动态规划复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE 2D DP MODEL</span>
+            <h2 id="problem-title">从一维到二维：两个字符串的前缀网格</h2>
+            <p>给定两个字符串 <code>text1</code> 和 <code>text2</code>，返回这两个字符串的最长<strong>公共子序列（LCS）</strong>的长度。一个字符串的子序列是指这样一个新的字符串：它是由原字符串在不改变字符的相对顺序的情况下删除某些字符（也可以不删除任何字符）后组成的新字符串。</p>
+            <p>与单数组递增子序列（LIS）不同，此处涉及两个互不相同的序列推进。如果尝试穷举子序列，时间复杂度将达到指数级 $O(2^M \times 2^N)$，不可承受。解题的本质在于观察<strong>两个前缀子串</strong>的末尾字符关系：</p>
+            <div class="article-insight">
+              <strong>二维状态转移核心：</strong>
+              <p>定义 <code>dp[i][j]</code> 为 <code>text1</code> 的前 <code>i</code> 个字符与 <code>text2</code> 的前 <code>j</code> 个字符的最长公共子序列长度：</p>
+              <ul>
+                <li>若末尾字符相同（<code>text1[i - 1] == text2[j - 1]</code>）：该字符必定可以成为公共子序列的新末尾，状态从<strong>左上角对角线</strong>无损转移并累加：<code>dp[i][j] = dp[i - 1][j - 1] + 1</code>；</li>
+                <li>若末尾字符不同：两者不可能同时作为当前公共子序列的末尾，分别尝试丢弃其中一个末尾字符，从<strong>上方</strong>或<strong>左方</strong>取较大值：<code>dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])</code>。</li>
+              </ul>
+            </div>
+          </section>
+
+          <section id="lcs-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">二维表格步进，观察对角线与正交转移。</h2>
+            <p>推演双重循环逐步填满二维网格的过程。当字符匹配时，观察高亮的左上角对角线跨越；当字符不同时，观察正交方向的极值继承。推演完成后，深紫色高亮展示反向回溯重构出的公共子序列路径。</p>
+            <div class="lcs-demo-panel">
+              <div class="lcs-demo-heading">
+                <span>二维网格 LCS 推演 · 步进演示</span>
+                <span>状态: dp[i][j] = match ? dp[i-1][j-1]+1 : max(dp[i-1][j], dp[i][j-1])</span>
+              </div>
+              <div class="lcs-stage">
+                <div class="lcs-visuals">
+                  <div class="lcs-row">
+                    <span class="lcs-row-label">二维 DP 状态表格（行: text1 前缀，列: text2 前缀）</span>
+                    <div id="lcs-table-container" class="lcs-table-container" role="region" aria-label="LCS 二维状态网格"></div>
+                  </div>
+                  <ul class="lcs-legend" aria-label="图例说明">
+                    <li><span class="legend-swatch swatch-active"></span> 当前计算单元格 (i, j)</li>
+                    <li><span class="legend-swatch swatch-source"></span> 转移来源 (对角线或行列极值)</li>
+                    <li><span class="legend-swatch swatch-path"></span> 最终 LCS 回溯路径</li>
+                  </ul>
+                </div>
+                <div class="lcs-readout">
+                  <div class="lcs-metrics">
+                    <div><span>当前字符比对</span><p><strong id="lcs-chars">—</strong></p></div>
+                    <div><span>当前 LCS 长度</span><p><strong id="lcs-len">0</strong></p></div>
+                    <div><span>推演步数</span><p><strong id="lcs-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="lcs-status" role="status" aria-live="polite" aria-atomic="true">初始化状态：第 0 行与第 0 列空前缀全设为 0。</p>
+                  <p class="lcs-reading-hint">字符相同沿对角线推进并加 1；字符不同时继承上方或左方的更优历史。</p>
+                </div>
+              </div>
+              <div id="lcs-controls" class="lcs-controls" hidden>
+                <div class="lcs-scenario-field">
+                  <label for="lcs-scenario">选择推演用例</label>
+                  <select id="lcs-scenario">
+                    <option value="standard">经典样例 "abcde" 与 "ace" · LCS 长度为 3 ("ace")</option>
+                    <option value="interleaved">交错序列 "AGGTAB" 与 "GXTXAYB" · LCS 长度为 4 ("GTAB")</option>
+                    <option value="no_common">完全无交集 "abc" 与 "def" · LCS 长度为 0</option>
+                    <option value="repeated">重复字符干扰 "bsbininm" 与 "jmjkbkjkv" · LCS 长度为 1</option>
+                    <option value="identical">完全相同 "algs" 与 "algs" · LCS 长度为 4 ("algs")</option>
+                  </select>
+                </div>
+                <div class="lcs-step-buttons">
+                  <button id="lcs-prev" type="button">← 上一步</button>
+                  <button id="lcs-next" type="button">下一步 →</button>
+                  <button id="lcs-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="lcs-noscript">步进演示需要 JavaScript。下方保留了完整推导过程与 C 语言核心实现。</p></noscript>
+            </div>
+          </section>
+
+          <section id="lcs-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE CRITICAL DECISIONS</span>
+            <h2 id="decisions-title">三个关键细节：内存栈溢出、下标偏移与回溯重构</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>大二维数组为何必须加 <code>static</code>？</h3><p>LeetCode 1143 题目给定的字符串长度上限为 1000。在 C 语言中，若在函数内部声明 <code>int dp[1005][1005];</code>，该数组会占用约 $1000 \times 1000 \times 4 \approx 4\text{ MB}$ 的栈空间。而在许多系统或编译器默认环境（例如 Windows MSVC 默认栈仅 1MB，部分评测环境 2~8MB）中，此操作会直接导致<strong>栈溢出崩溃（Stack Overflow）</strong>。将数组声明为 <code>static int dp[MAXN][MAXN];</code> 或放在全局数据段，能彻底消除栈溢出隐患。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3><code>dp[i][j]</code> 与 <code>text[i - 1]</code> 的“偏移 1”约定</h3><p>由于存在“空字符串”的基础边界，网格的第 0 行与第 0 列专门代表长度为 0 的前缀（此时 LCS 为 0）。因此，外层循环中的 <code>i = 1..length1</code> 表示考察“前 <code>i</code> 个字符”，而字符串在 C 语言中是 0-indexed 的，对应在数组中的访问下标恰好是 <code>text1[i - 1]</code>。切忌混淆 <code>i</code> 与 <code>i - 1</code>，否则会发生数组越界或少比对末尾字符。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>不仅求长度，如何重构具体字符串？</h3><p>求出 <code>dp[m][n]</code> 仅得到了长度。若要还原真正的 LCS 字符串，可以从右下角 <code>(m, n)</code> 出发倒序回溯：若 <code>text1[i - 1] == text2[j - 1]</code>，则该字符属于 LCS，将其存入结果并移向 <code>(i - 1, j - 1)</code>；否则比较 <code>dp[i - 1][j]</code> 与 <code>dp[i][j - 1]</code>，沿着值更大的一侧后退。最终将收集到的字符逆序输出即可。</p></div></li>
+            </ol>
+          </section>
+
+          <section class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / THE C IMPLEMENTATION</span>
+            <h2 id="code-title">真实 C 语言实现节选</h2>
+            <p>选自 CSP 练习记录中已通过评测的源码。使用静态二维表，逻辑直观，评测表现优异。</p>
+            <div class="article-code-panel">
+              <div class="article-code-caption">
+                <span>033-lc1143-longest-common-subsequence / main.c</span>
+                <a href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 ↗</a>
+              </div>
+              <pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXN 1005
+
+int longestCommonSubsequence(char *text1, char *text2) {
+    // 关键细节 1：使用 static 避免 4MB 二维数组在函数调用栈中溢出
+    static int dp[MAXN][MAXN];
+    int length1 = strlen(text1);
+    int length2 = strlen(text2);
+
+    for (int i = 1; i &lt;= length1; i++) {
+        for (int j = 1; j &lt;= length2; j++) {
+            // 关键细节 2：前 i/j 个字符对应下标 i-1 与 j-1
+            if (text1[i - 1] == text2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                if (dp[i - 1][j] &gt; dp[i][j - 1]) {
+                    dp[i][j] = dp[i - 1][j];
+                } else {
+                    dp[i][j] = dp[i][j - 1];
+                }
+            }
+        }
+    }
+    return dp[length1][length2];
+}</code></pre>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">05 / COMPLEXITY & SPACE COMPRESSION</span>
+            <h2 id="complexity-title">复杂度与滚动数组空间压缩</h2>
+            <div class="article-complexity">
+              <div>
+                <span>时间复杂度</span>
+                <strong>O(M × N)</strong>
+                <p>M 与 N 分别为两个字符串的长度。两重循环逐单元格填充，每个单元格只做常数次比较与赋值，总计算量完全确定。</p>
+              </div>
+              <div>
+                <span>空间复杂度与滚动数组</span>
+                <strong>O(M × N) → O(min(M, N))</strong>
+                <p>基础解法使用二维数组占 $O(M \times N)$ 空间。注意到计算第 <code>i</code> 行时仅依赖第 <code>i - 1</code> 行，因此可以使用大小为 2 行的滚动数组，甚至仅维护 1 行一维数组搭配一个临时变量记录左上角历史，即可将空间压缩至 $O(\min(M, N))$。</p>
+              </div>
+            </div>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./longest-increasing-subsequence.html"><span class="nav-dir">← 上一篇实践笔记</span><span>006 最长递增子序列与动态规划</span></a>
+            <a class="nav-next" href="./index.html"><span class="nav-dir">全部实践笔记 →</span><span>返回归档索引</span></a>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="本篇目录">
+          <span class="section-index">CONTENTS</span>
+          <nav>
+            <a href="#problem-title">01 二维网格与状态模型</a>
+            <a href="#demo-title">02 二维 DP 表格步进演示</a>
+            <a href="#decisions-title">03 三个关键工程细节</a>
+            <a href="#code-title">04 C 语言实现节选</a>
+            <a href="#complexity-title">05 复杂度与滚动数组</a>
+          </nav>
+          <p>最长公共子序列是 Git diff、代码比对、生物基因序列对比等现实工具的核心算法底座。掌握二维网格的对角线与正交推导，是理解复杂序列对齐算法的基石。</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践笔记 007</span>
+      <a href="#article-top">回到顶部 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

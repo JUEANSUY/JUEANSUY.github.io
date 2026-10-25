@@ -1,0 +1,17 @@
+{
+  "name": "Jueansuy 个人主页与算法实践",
+  "short_name": "Jueansuy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101615",
+  "theme_color": "#101615",
+  "description": "Jueansuy 的个人主页、浏览器纯前端离线开发者工具箱与 CSP/LeetCode 算法实践复盘。",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

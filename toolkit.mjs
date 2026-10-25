@@ -208,5 +208,129 @@ export function hexToText(text) {
   }
 }
 
+function decodeBase64Url(segment) {
+  let b64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  return base64Decode(b64);
+}
+
+/**
+ * 纯本地解析 JWT（JSON Web Token）头部与载荷。
+ * 格式化输出 Header 与 Payload，分析 exp/nbf/iat 等时间戳，并进行安全提示。
+ * 本函数不发送网络请求，不验证加密签名真伪。
+ */
+export function jwtDecode(token) {
+  requireString(token);
+  const trimmed = token.trim();
+  if (trimmed === "") return "";
+
+  const parts = trimmed.split(".");
+  if (parts.length !== 3) {
+    throw new TypeError("JWT 格式无效：标准的 JWT 必须由两个点号分隔为 Header、Payload、Signature 三段。");
+  }
+
+  let header;
+  let payload;
+  try {
+    header = JSON.parse(decodeBase64Url(parts[0]));
+  } catch (err) {
+    throw new TypeError("JWT 头部（Header）不是合法的 Base64URL 编码 JSON 对象。", { cause: err });
+  }
+  try {
+    payload = JSON.parse(decodeBase64Url(parts[1]));
+  } catch (err) {
+    throw new TypeError("JWT 载荷（Payload）不是合法的 Base64URL 编码 JSON 对象。", { cause: err });
+  }
+
+  const sections = [];
+  sections.push("[JWT Header 头部]");
+  sections.push(JSON.stringify(header, null, 2));
+
+  sections.push("\n[JWT Payload 载荷]");
+  sections.push(JSON.stringify(payload, null, 2));
+
+  sections.push("\n[时间与有效性分析]");
+  const now = Math.floor(Date.now() / 1000);
+
+  if (typeof payload.exp === "number") {
+    const expDate = new Date(payload.exp * 1000).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+    const diff = payload.exp - now;
+    if (diff < 0) {
+      const pastHours = Math.abs(Math.round(diff / 3600));
+      sections.push(`• 过期时间 (exp): ${expDate} (UTC+8) -> [已过期约 ${pastHours} 小时]`);
+    } else {
+      const leftHours = Math.round(diff / 3600);
+      sections.push(`• 过期时间 (exp): ${expDate} (UTC+8) -> [尚在有效期内，剩余约 ${leftHours} 小时]`);
+    }
+  } else {
+    sections.push("• 过期时间 (exp): 未声明");
+  }
+
+  if (typeof payload.iat === "number") {
+    const iatDate = new Date(payload.iat * 1000).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+    sections.push(`• 签发时间 (iat): ${iatDate} (UTC+8)`);
+  }
+
+  if (typeof payload.nbf === "number") {
+    const nbfDate = new Date(payload.nbf * 1000).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+    sections.push(`• 生效时间 (nbf): ${nbfDate} (UTC+8)`);
+  }
+
+  sections.push("\n[安全提示]");
+  if (header.alg === "none") {
+    sections.push("⚠️ 警告：Header 算法标注为 'none'，可能存在允许未签名伪造的安全隐患！");
+  } else {
+    sections.push(`• 签名算法: ${header.alg || "未知"}`);
+  }
+  sections.push("• 签名段: " + (parts[2] ? `${parts[2].slice(0, 16)}...` : "(空)"));
+  sections.push("• 说明：本工具仅在浏览器本地解码明文信息，不校验数字签名真伪，亦不上传任何凭据。");
+
+  return sections.join("\n");
+}
+
+/**
+ * 生成符合 RFC 4122 标准的 UUID v4 随机字符串。
+ */
+export function generateUuid() {
+  if (typeof crypto?.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // 降级回退基于 getRandomValues
+  const rnd = new Uint8Array(16);
+  crypto.getRandomValues(rnd);
+  rnd[6] = (rnd[6] & 0x0f) | 0x40; // version 4
+  rnd[8] = (rnd[8] & 0x3f) | 0x80; // variant
+  const hex = Array.from(rnd, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/**
+ * 生成加密安全的随机密钥字符串（支持 hex 16进制、alphanumeric 字母数字、base64url）。
+ */
+export function generateRandomToken(length = 32, type = "hex") {
+  const len = Math.max(4, Math.min(256, Number(length) || 32));
+  if (type === "hex") {
+    const bytes = new Uint8Array(Math.ceil(len / 2));
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("").slice(0, len);
+  }
+  if (type === "alphanumeric") {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const bytes = new Uint8Array(len);
+    crypto.getRandomValues(bytes);
+    let str = "";
+    for (let i = 0; i < len; i++) {
+      str += chars[bytes[i] % chars.length];
+    }
+    return str;
+  }
+  // base64url
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "").slice(0, len);
+}
+
+
 
 
