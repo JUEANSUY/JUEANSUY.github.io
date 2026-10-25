@@ -1,4 +1,4 @@
-import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify, timestampToDate, dateToTimestamp } from './toolkit.mjs';
+import { sha256, base64Encode, base64Decode, urlEncode, urlDecode, utf8ByteLength, jsonFormat, jsonMinify, timestampToDate, dateToTimestamp, textToHex, hexToText } from './toolkit.mjs';
 
 const $ = (id) => document.getElementById(id);
 const input = $('tool-input');
@@ -33,6 +33,11 @@ const tools = {
     sample: '1792873887',
     hint: 'Unix 时间戳与北京时间（UTC+8）互相转换。支持 10 位秒级与 13 位毫秒级时间戳，纯本地计算。',
   },
+  hex: {
+    title: 'Hex 编解码', format: '十六进制字节序列',
+    sample: '你好，世界！',
+    hint: 'UTF-8 文本与十六进制（Hex）字节序列互转。解码支持空格、冒号分隔或连续 Hex，纯本地计算。',
+  },
 };
 let selected = 'sha256';
 let mode = 'encode';
@@ -57,6 +62,7 @@ function setBusy(busy) {
   const label = selected === 'sha256' ? tools.sha256.title
     : selected === 'json' ? `${mode === 'encode' ? '格式化' : '压缩'} JSON`
     : selected === 'timestamp' ? `${mode === 'encode' ? '转北京时间' : '转时间戳'}`
+    : selected === 'hex' ? `${mode === 'encode' ? '转十六进制' : '转文本'}`
     : `${mode === 'encode' ? '编码' : '解码'}文本`;
   runButton.replaceChildren(document.createTextNode(busy ? '处理中…' : label));
   if (!busy) {
@@ -92,13 +98,14 @@ function configure() {
   swapButton.hidden = isHash;
   modes.forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
-    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : selected === 'timestamp' ? '转为日期' : '编码';
-    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : selected === 'timestamp' ? '转时间戳' : '解码';
+    if (button.dataset.mode === 'encode') button.textContent = selected === 'json' ? '格式化' : selected === 'timestamp' ? '转为日期' : selected === 'hex' ? '转 Hex' : '编码';
+    if (button.dataset.mode === 'decode') button.textContent = selected === 'json' ? '压缩' : selected === 'timestamp' ? '转时间戳' : selected === 'hex' ? '转文本' : '解码';
   });
   $('tool-hint').textContent = tools[selected].hint;
   $('output-format').textContent = isHash ? tools[selected].format
     : selected === 'json' ? (mode === 'encode' ? '格式化 JSON' : '紧凑 JSON')
     : selected === 'timestamp' ? (mode === 'encode' ? '北京时间 / ISO' : 'Unix 时间戳')
+    : selected === 'hex' ? (mode === 'encode' ? '十六进制字节 (Hex)' : 'UTF-8 文本')
     : selected === 'base64' && mode === 'encode' ? '标准 Base64'
     : selected === 'url' && mode === 'encode' ? 'URI 参数值'
     : 'UTF-8 文本';
@@ -121,7 +128,8 @@ async function run() {
       : selected === 'base64' ? (mode === 'encode' ? base64Encode : base64Decode)
       : selected === 'url' ? (mode === 'encode' ? urlEncode : urlDecode)
       : selected === 'json' ? (mode === 'encode' ? jsonFormat : jsonMinify)
-      : (mode === 'encode' ? timestampToDate : dateToTimestamp);
+      : selected === 'timestamp' ? (mode === 'encode' ? timestampToDate : dateToTimestamp)
+      : (mode === 'encode' ? textToHex : hexToText);
     const result = await fn(text);
     if (serial !== requestSerial) return;
     output.value = result;
@@ -133,6 +141,7 @@ async function run() {
     const verb = selected === 'sha256' ? '摘要已生成'
       : selected === 'json' ? (mode === 'encode' ? '格式化完成' : '压缩完成')
       : selected === 'timestamp' ? '转换完成'
+      : selected === 'hex' ? (mode === 'encode' ? '十六进制转换完成' : '文本解码完成')
       : mode === 'encode' ? '编码完成' : '解码完成';
     setStatus(`${verb} · ${result === '' ? '输出为空字符串' : '输入内容未上传'}`, 'success');
   } catch (error) {
@@ -157,6 +166,8 @@ function loadExample() {
     ? (mode === 'decode' ? jsonFormat(sample) : jsonMinify(sample))
     : selected === 'timestamp'
     ? (mode === 'encode' ? '1792873887' : '2026-10-25 03:28:00')
+    : selected === 'hex'
+    ? (mode === 'decode' ? textToHex(sample) : sample)
     : mode === 'decode'
     ? (selected === 'base64' ? base64Encode(sample) : urlEncode(sample))
     : sample;

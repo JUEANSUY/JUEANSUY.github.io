@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="复盘 LeetCode 300 最长递增子序列：动态规划经典解法，dp 状态设计的本质，为什么 C 语言不能写 dp[MAXN]={1}，以及为什么答案必须在全局中取最大值。附动态推演步进演示与 C 源码节选。">
+  <meta name="theme-color" content="#101615">
+  <title>最长递增子序列：dp 状态设计、初始化陷阱与全局最大值 · Jueansuy</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="最长递增子序列：dp 状态设计、初始化陷阱与全局最大值 · Jueansuy">
+  <meta property="og:description" content="复盘 LeetCode 300 最长递增子序列：动态规划经典解法，dp 状态设计的本质，为什么 C 语言不能写 dp[MAXN]={1}，以及为什么答案必须在全局中取最大值。附动态推演步进演示与 C 源码节选。">
+  <meta property="og:url" content="https://www.jueansuy.cn/notes/longest-increasing-subsequence.html">
+  <meta name="twitter:card" content="summary">
+  <script type="module" src="../note-common.mjs"></script>
+  <script type="module" src="../lis-demo.mjs"></script>
+</head>
+<body class="article-page">
+  <a class="skip-link" href="#article-content">跳到笔记正文</a>
+  <div class="site-shell">
+    <header class="article-masthead">
+      <a class="brand" href="../index.html" aria-label="Jueansuy 首页"><span class="brand-symbol">j<span>•</span></span><span>jueansuy<span class="brand-caption">A LITTLE SPACE TO BUILD</span></span></a>
+      <a class="article-back" href="./index.html"><span aria-hidden="true">←</span> 回到实践笔记归档</a>
+    </header>
+
+    <main id="article-top">
+      <header class="article-intro">
+        <div class="eyebrow"><span class="status-dot"></span> PRACTICE NOTE / 006</div>
+        <h1>最长递增子序列：<br>dp 状态设计、初始化陷阱与<span class="mint">全局最大值</span></h1>
+        <p class="article-deck">这是动态规划领域最经典的子序列模型（LeetCode 300）。它既是理解“以 i 结尾”这一经典状态设计的绝佳范例，又包含若干初学者极易踩中的工程边界陷阱：局部初始化遗漏、返回值误取末项、严格递增中相同元素的处理，以及从 O(n²) 状态转移迈向贪心二分（耐心理论）的进阶视角。</p>
+        <div class="article-meta"><span>C 语言</span><span>动态规划 / 子序列</span><span>LeetCode 300 · 中等</span><span>整理于 <time datetime="2026-10-25">2026.10.25</time></span></div>
+      </header>
+
+      <div class="article-layout">
+        <article id="article-content" class="article-content" aria-label="最长递增子序列与动态规划复盘">
+          <section class="article-section" aria-labelledby="problem-title">
+            <span class="section-index">01 / THE PROBLEM & SUBSEQUENCE</span>
+            <h2 id="problem-title">子序列不要求连续，状态为何必须“以 i 结尾”？</h2>
+            <p>给你一个整数数组 <code>nums</code>，找到其中最长<strong>严格递增子序列</strong>的长度。子序列是由数组派生而来的序列，删除（或不删除）数组中的元素而不改变其余元素的顺序即可。</p>
+            <p>初学者尝试动态规划时，最容易写出一种直觉定义：“<code>dp[i]</code> 表示前 <code>i</code> 个数里的最长递增子序列长度”。但这个定义在推导新项时会立刻陷入困境：当我们考虑 <code>nums[i]</code> 能否接在前面时，由于我们不知道前面子序列的<strong>末尾数值到底是多少</strong>，就根本无法判断新元素能否满足严格递增！</p>
+            <div class="article-insight">
+              <strong>状态定义的破局点：</strong>
+              <p>必须将状态收拢为：<code>dp[i]</code> 表示<strong>必须以 nums[i] 为结尾</strong>的最长严格递增子序列长度。</p>
+              <p>这样定义的好处是：只要考察前面任意一个位置 <code>j (j &lt; i)</code>，若 <code>nums[j] &lt; nums[i]</code>，就能毫无后效性地直接把 <code>nums[i]</code> 接在以 <code>nums[j]</code> 结尾的子序列后面，形成长度为 <code>dp[j] + 1</code> 的新序列！</p>
+            </div>
+          </section>
+
+          <section id="lis-demo" class="article-section" aria-labelledby="demo-title">
+            <span class="section-index">02 / STEP THROUGH IT</span>
+            <h2 id="demo-title">双重循环步进，实时推演状态转移。</h2>
+            <p>观察外层循环如何固定目标结尾 <code>nums[i]</code>，内层循环如何向前扫描 <code>nums[j]</code>，并在满足 <code>nums[j] &lt; nums[i]</code> 且带来更长长度时完成 <code>dp[i]</code> 的更新。</p>
+            <div class="lis-demo-panel">
+              <div class="lis-demo-heading">
+                <span>LIS 动态规划推演 · 步进演示</span>
+                <span>状态转移: dp[i] = max(dp[i], dp[j] + 1) (当 nums[j] &lt; nums[i])</span>
+              </div>
+              <div class="lis-stage">
+                <div class="lis-visuals">
+                  <div class="lis-row">
+                    <span class="lis-row-label">数组元素与当前各位置的 dp[k]（表示以 nums[k] 结尾的最长长度）</span>
+                    <div id="lis-grid" class="lis-grid" role="group" aria-label="LIS 状态单元格"></div>
+                  </div>
+                  <ul class="lis-legend" aria-label="图例">
+                    <li><span class="legend-swatch swatch-active"></span> 当前目标项 nums[i]</li>
+                    <li><span class="legend-swatch swatch-source"></span> 考察前驱项 nums[j]</li>
+                    <li><span class="legend-swatch swatch-best"></span> 全局最优结尾</li>
+                  </ul>
+                </div>
+                <div class="lis-readout">
+                  <div class="lis-metrics">
+                    <div><span>当前结尾元素</span><p><strong id="lis-current">—</strong></p></div>
+                    <div><span>全局最长长度</span><p><strong id="lis-max">1</strong></p></div>
+                    <div><span>推演步数</span><p><strong id="lis-step">1 / 1</strong></p></div>
+                  </div>
+                  <p id="lis-status" role="status" aria-live="polite" aria-atomic="true">初始化状态：dp 数组全部设为 1。</p>
+                  <p class="lis-reading-hint">注意：相等元素无法构成严格递增；最长序列结尾不一定是最后一项。</p>
+                </div>
+              </div>
+              <div id="lis-controls" class="lis-controls" hidden>
+                <div class="lis-scenario-field">
+                  <label for="lis-scenario">选择推演用例</label>
+                  <select id="lis-scenario">
+                    <option value="standard">经典样例 [10, 9, 2, 5, 3, 7, 101, 18] · 最长 4 (如 2,3,7,101)</option>
+                    <option value="duplicates">全相同元素 [7, 7, 7, 7, 7] · 严格递增陷阱，长度为 1</option>
+                    <option value="zigzag">波折起伏 [4, 10, 4, 3, 8, 9] · 最长 3 (如 4,8,9 或 3,8,9)</option>
+                    <option value="decreasing">单调递减 [9, 8, 7, 6, 5] · 无任何递增对，长度为 1</option>
+                    <option value="increasing">单调递增 [1, 3, 6, 7, 9, 12] · 完整连续接续，最长 6</option>
+                  </select>
+                </div>
+                <div class="lis-step-buttons">
+                  <button id="lis-prev" type="button">← 上一步</button>
+                  <button id="lis-next" type="button">下一步 →</button>
+                  <button id="lis-reset" type="button">重置</button>
+                </div>
+              </div>
+              <noscript><p class="lis-noscript">步进演示需要 JavaScript。下方保留了完整推导过程与 C 语言核心实现。</p></noscript>
+            </div>
+          </section>
+
+          <section id="lis-decisions" class="article-section" aria-labelledby="decisions-title">
+            <span class="section-index">03 / THREE CRITICAL DECISIONS</span>
+            <h2 id="decisions-title">三个致命细节：C 初始化、严格递增与全局最大值</h2>
+            <ol class="article-steps">
+              <li><span class="article-step-number">01</span><div><h3>C 语言初始化陷阱：<code>int dp[MAXN] = {1};</code></h3><p>在 C 语言中，语句 <code>int dp[MAXN] = {1};</code> <strong>只负责把 <code>dp[0]</code> 赋为 1</strong>，其后的全部元素 <code>dp[1..n-1]</code> 会被编译器默认补零！而在 LIS 中，每个元素自身单独成一个子序列，长度应当全部是 1。若误写此语法，未更新的项将是 0，导致算法彻底出错。必须使用 <code>for</code> 循环显式将全数组初始化为 1。</p></div></li>
+              <li><span class="article-step-number">02</span><div><h3>答案绝非 <code>dp[n - 1]</code>，必须全局求 max</h3><p>许多习惯了“背包求 <code>dp[amount]</code>”或“打家劫舍求 <code>dp[n-1]</code>”的开发者会顺手 <code>return dp[n - 1];</code>。但在 LIS 中，最长递增子序列的最后一个数完全可能落在数组中部（例如 <code>[1, 5, 2]</code>，最长序列是 <code>[1, 5]</code> 长度为 2，而以末尾 2 结尾的 <code>dp[2]</code> 仅为 2；若数组是 <code>[1, 10, 2]</code>，<code>dp[1]=2</code>，<code>dp[2]=2</code>；若为 <code>[10, 20, 1]</code>，末尾 <code>dp[2]=1</code>，而全局最大值是 <code>dp[1]=2</code>）。因此最终返回值必须是所有 <code>dp[i]</code> 的最大值。</p></div></li>
+              <li><span class="article-step-number">03</span><div><h3>严格递增意味着 <code>nums[j] == nums[i]</code> 不能接上</h3><p>题目明确要求“严格递增”（Strictly Increasing）。当 <code>nums[j] == nums[i]</code> 时，不能转移（即使接上长度也不会增加，且不合法）。因此转移守卫条件严格为 <code>if (nums[j] &lt; nums[i])</code>。</p></div></li>
+            </ol>
+          </section>
+
+          <section class="article-section" aria-labelledby="code-title">
+            <span class="section-index">04 / THE C IMPLEMENTATION</span>
+            <h2 id="code-title">真实 C 语言实现节选</h2>
+            <p>选自 CSP 练习记录中已通过评测的源码。逻辑清晰，循环边界精准。</p>
+            <div class="article-code-panel">
+              <div class="article-code-caption">
+                <span>031-lc300-longest-increasing-subsequence / main.c</span>
+                <a href="https://github.com/JUEANSUY/csp" target="_blank" rel="noopener noreferrer">查看公开仓库 ↗</a>
+              </div>
+              <pre><code>#include &lt;stdio.h&gt;
+
+#define MAXN 2505
+
+int lengthOfLIS(int *nums, int numsSize) {
+    int dp[MAXN];
+
+    // 避坑 1：显式初始化全部 dp[i] 为 1（每个元素自成长度为 1 的序列）
+    for (int i = 0; i &lt; numsSize; i++) {
+        dp[i] = 1;
+    }
+
+    // 状态转移：外层扫描每个结尾，内层考察所有前驱候选
+    for (int i = 0; i &lt; numsSize; i++) {
+        for (int j = 0; j &lt; i; j++) {
+            if (nums[j] &lt; nums[i]) {
+                if (dp[j] + 1 &gt; dp[i]) {
+                    dp[i] = dp[j] + 1;
+                }
+            }
+        }
+    }
+
+    // 避坑 2：答案不是 dp[numsSize - 1]，而是全局所有 dp[i] 的最大值
+    int max = 0;
+    for (int i = 0; i &lt; numsSize; i++) {
+        if (dp[i] &gt; max) {
+            max = dp[i];
+        }
+    }
+    return max;
+}</code></pre>
+            </div>
+          </section>
+
+          <section class="article-section" aria-labelledby="complexity-title">
+            <span class="section-index">05 / COMPLEXITY & PATIENCE SORTING</span>
+            <h2 id="complexity-title">复杂度与贪心二分（耐心理论）进阶</h2>
+            <div class="article-complexity">
+              <div>
+                <span>动态规划复杂度</span>
+                <strong>时间 O(N²) · 空间 O(N)</strong>
+                <p>N 为数组长度。外层遍历 N 次，内层平均遍历 N / 2 次，总比较次数约 N² / 2。空间维护一个长为 N 的静态数组，开销极小且满足 LeetCode 约束。</p>
+              </div>
+              <div>
+                <span>贪心二分优化 (Patience Sorting)</span>
+                <strong>时间 O(N log N) · 空间 O(N)</strong>
+                <p>若数据规模达到 10⁵，可维护 <code>tails[k]</code> 数组（表示长度为 k+1 的递增子序列的最小末尾元素）。<code>tails</code> 天然单调递增，遍历每个数时用二分查找定位并替换，即可将时间压缩至 O(N log N)。</p>
+              </div>
+            </div>
+          </section>
+
+          <nav class="article-nav" aria-label="实践笔记导航">
+            <a class="nav-prev" href="./coin-change.html"><span class="nav-dir">← 上一篇实践笔记</span><span>005 零钱兑换与完全背包</span></a>
+            <a class="nav-next" href="./index.html"><span class="nav-dir">全部实践笔记 →</span><span>返回归档索引</span></a>
+          </nav>
+        </article>
+
+        <aside class="article-toc" aria-label="本篇目录">
+          <span class="section-index">CONTENTS</span>
+          <nav>
+            <a href="#problem-title">01 题目与状态破局</a>
+            <a href="#demo-title">02 动态规划步进演示</a>
+            <a href="#decisions-title">03 三个致命细节</a>
+            <a href="#code-title">04 C 语言实现节选</a>
+            <a href="#complexity-title">05 复杂度与贪心二分</a>
+          </nav>
+          <p>最长递增子序列是算法面试与竞赛中检验“状态无后效性”的试金石。掌握“以 i 结尾”的状态设计是解决各类子序列难题的关键底座。</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span><span class="status-dot"></span> JUEANSUY · 算法实践笔记 006</span>
+      <a href="#article-top">回到顶部 <span>↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序等 C 语言解题复盘与浏览器交互式步进演示。">
+  <meta name="description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序、完全背包与最长递增子序列等 C 语言解题复盘与浏览器交互式步进演示。">
   <meta name="theme-color" content="#101615">
   <title>实践笔记归档 · 算法复盘与交互演示 · Jueansuy</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <meta property="og:type" content="website">
   <meta property="og:title" content="实践笔记归档 · 算法复盘与交互演示 · Jueansuy">
-  <meta property="og:description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序、完全背包等 C 语言解题复盘与浏览器交互式步进演示。">
+  <meta property="og:description" content="Jueansuy 的算法与刷题实践笔记归档。包含广度优先搜索、单调栈、树状数组、有向图拓扑排序、完全背包与最长递增子序列等 C 语言解题复盘与浏览器交互式步进演示。">
   <meta property="og:url" content="https://www.jueansuy.cn/notes/index.html">
   <meta name="twitter:card" content="summary">
+  <script type="module" src="../notes-archive.mjs"></script>
 </head>
 <body class="article-page notes-archive-page">
   <a class="skip-link" href="#archive-content">跳到笔记归档内容</a>
@@ -31,14 +32,42 @@
           <span>纯静态零依赖</span>
           <span>C 语言实现</span>
           <span>浏览器交互演练</span>
-          <span>持续整理中</span>
+          <span>共 6 篇归档</span>
         </div>
       </header>
 
       <section class="archive-section" aria-label="算法实践笔记列表">
+        <div class="archive-toolbar" role="search" aria-label="实践笔记筛选与搜索">
+          <div class="archive-filters" role="group" aria-label="笔记分类筛选">
+            <button type="button" class="archive-filter-btn" data-category="all" data-active="true" aria-pressed="true">全部 (6)</button>
+            <button type="button" class="archive-filter-btn" data-category="dp" data-active="false" aria-pressed="false">动态规划 (2)</button>
+            <button type="button" class="archive-filter-btn" data-category="graph" data-active="false" aria-pressed="false">图论与搜索 (2)</button>
+            <button type="button" class="archive-filter-btn" data-category="datastruct" data-active="false" aria-pressed="false">数据结构与栈 (2)</button>
+          </div>
+          <div class="archive-search">
+            <input id="archive-search-input" type="search" placeholder="搜索题号、关键词、算法类型..." aria-label="搜索实践笔记">
+          </div>
+        </div>
+
         <div class="archive-grid">
 
-          <article class="archive-card" aria-labelledby="note-005-title">
+          <article class="archive-card" data-category="dp" aria-labelledby="note-006-title">
+            <div class="archive-card-top">
+              <span class="archive-card-num">NOTE / 006</span>
+              <span class="archive-card-tag">动态规划 · 子序列</span>
+            </div>
+            <h2 id="note-006-title"><a href="./longest-increasing-subsequence.html">最长递增子序列：dp 状态设计、初始化陷阱与全局最大值</a></h2>
+            <p class="archive-card-desc">复盘 LeetCode 300《最长递增子序列》。以 nums[i] 结尾的状态无后效性设计、C 语言局部数组初始化语法陷阱，以及为什么答案必须在全局中取最大值。</p>
+            <div class="archive-card-meta">
+              <span>LeetCode 300 · 中等</span>
+              <span>LIS 动态转移步进演示</span>
+            </div>
+            <div class="archive-card-footer">
+              <a class="archive-card-link" href="./longest-increasing-subsequence.html">阅读复盘与交互演练 <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <article class="archive-card" data-category="dp" aria-labelledby="note-005-title">
             <div class="archive-card-top">
               <span class="archive-card-num">NOTE / 005</span>
               <span class="archive-card-tag">动态规划 · 完全背包</span>
@@ -54,7 +83,7 @@
             </div>
           </article>
 
-          <article class="archive-card" aria-labelledby="note-004-title">
+          <article class="archive-card" data-category="graph" aria-labelledby="note-004-title">
             <div class="archive-card-top">
               <span class="archive-card-num">NOTE / 004</span>
               <span class="archive-card-tag">图论 · 拓扑排序 · BFS</span>
@@ -70,7 +99,7 @@
             </div>
           </article>
 
-          <article class="archive-card" aria-labelledby="note-003-title">
+          <article class="archive-card" data-category="datastruct" aria-labelledby="note-003-title">
             <div class="archive-card-top">
               <span class="archive-card-num">NOTE / 003</span>
               <span class="archive-card-tag">数据结构 · 树状数组</span>
@@ -86,7 +115,7 @@
             </div>
           </article>
 
-          <article class="archive-card" aria-labelledby="note-002-title">
+          <article class="archive-card" data-category="datastruct" aria-labelledby="note-002-title">
             <div class="archive-card-top">
               <span class="archive-card-num">NOTE / 002</span>
               <span class="archive-card-tag">单调栈 · 几何极值</span>
@@ -102,7 +131,7 @@
             </div>
           </article>
 
-          <article class="archive-card" aria-labelledby="note-001-title">
+          <article class="archive-card" data-category="graph" aria-labelledby="note-001-title">
             <div class="archive-card-top">
               <span class="archive-card-num">NOTE / 001</span>
               <span class="archive-card-tag">图论 · 网格广度优先搜索</span>
@@ -118,6 +147,7 @@
             </div>
           </article>
 
+          <div id="archive-empty" class="archive-empty" hidden>未找到匹配的实践笔记，换个关键词试试？</div>
         </div>
       </section>
     </main>

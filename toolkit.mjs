@@ -171,4 +171,42 @@ export function dateToTimestamp(text) {
   return `毫秒时间戳: ${millis}\n秒级时间戳: ${seconds}\n标准北京时间: ${beijingStr}\n标准 ISO 时间: ${isoStr}`;
 }
 
+/**
+ * 将文本按 UTF-8 编码为小写十六进制字符串（默认以空格分隔每个字节）。
+ * 空输入返回空字符串。
+ */
+export function textToHex(text, separator = " ") {
+  requireUnicodeText(text);
+  if (text === "") return "";
+  const bytes = utf8Bytes(text);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(separator);
+}
+
+/**
+ * 将十六进制字符串解码为 UTF-8 文本。
+ * 允许包含空格、换行或冒号分隔符，也支持连续十六进制；
+ * 校验字符合法性与偶数长度，且必须解码为合法的 UTF-8 序列。
+ */
+export function hexToText(text) {
+  requireString(text);
+  const cleaned = text.trim().replace(/[\s:-]/g, "");
+  if (cleaned === "") return "";
+  if (!/^[0-9a-fA-F]*$/.test(cleaned)) {
+    throw new TypeError("十六进制字符无效，仅支持 0-9、a-f、A-F 及空格/冒号分隔符。");
+  }
+  if (cleaned.length % 2 !== 0) {
+    throw new TypeError("十六进制字符数量必须为偶数（每个字节占 2 个十六进制字符）。");
+  }
+  const bytes = new Uint8Array(cleaned.length / 2);
+  for (let i = 0; i < cleaned.length; i += 2) {
+    bytes[i / 2] = parseInt(cleaned.slice(i, i + 2), 16);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch (error) {
+    throw new TypeError("十六进制解码后的内容不是合法的 UTF-8 文本。", { cause: error });
+  }
+}
+
+
 
